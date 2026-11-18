@@ -11,6 +11,8 @@ ROOT = Path(__file__).parent
 DATA = ROOT / "cobaltfairy-data"
 DB = ROOT / "intel.db"
 CURRENT_PRICING = ROOT / "pricing_current.csv"
+SOCIAL_POSTS = ROOT / "social_posts.csv"
+SOCIAL_COVERAGE = ROOT / "social_coverage.csv"
 
 
 def num(s):
@@ -210,6 +212,26 @@ if CURRENT_PRICING.exists():
     current["current_tier"] = num(current["current_tier"]).astype("Int64")
     current["captured_at"] = pd.to_datetime(current["captured_at"], errors="coerce").dt.date
 
+social = pd.DataFrame()
+if SOCIAL_POSTS.exists():
+    social = pd.read_csv(SOCIAL_POSTS, dtype=str, keep_default_na=False)
+    social["source_row"] = social.index + 2
+    social["source_file"] = SOCIAL_POSTS.name
+    social["posted_at"] = pd.to_datetime(social["posted_at"], errors="coerce").dt.date
+    social["captured_at"] = pd.to_datetime(social["captured_at"], errors="coerce").dt.date
+    assert not social["post_id"].duplicated().any()
+    assert social["posted_at"].notna().all()
+
+coverage = pd.DataFrame()
+if SOCIAL_COVERAGE.exists():
+    coverage = pd.read_csv(SOCIAL_COVERAGE, dtype=str, keep_default_na=False)
+    coverage["source_row"] = coverage.index + 2
+    coverage["source_file"] = SOCIAL_COVERAGE.name
+    coverage["posts_captured"] = num(coverage["posts_captured"]).astype("Int64")
+    coverage["window_start"] = pd.to_datetime(coverage["window_start"], errors="coerce").dt.date
+    coverage["window_end"] = pd.to_datetime(coverage["window_end"], errors="coerce").dt.date
+    coverage["captured_at"] = pd.to_datetime(coverage["captured_at"], errors="coerce").dt.date
+
 with sqlite3.connect(DB) as con:
     write(klytics, "klytics_markets", con)
     write(cf, "cf_performance", con)
@@ -219,6 +241,14 @@ with sqlite3.connect(DB) as con:
         con.execute("DROP TABLE IF EXISTS pricing_current")
     else:
         write(current, "pricing_current", con)
+    if social.empty:
+        con.execute("DROP TABLE IF EXISTS social_posts")
+    else:
+        write(social, "social_posts", con)
+    if coverage.empty:
+        con.execute("DROP TABLE IF EXISTS social_coverage")
+    else:
+        write(coverage, "social_coverage", con)
 
     assert con.execute(
         "select net_units_sold, round(royalty, 2) from cf_performance "

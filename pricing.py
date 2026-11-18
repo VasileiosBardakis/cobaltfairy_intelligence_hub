@@ -49,7 +49,7 @@ def compare_pricing(baseline, current):
         "baseline_tier", "current_tier", "tier_basis", "baseline_price",
         "price", "price_change", "price_change_pct", "change_type",
         "plan_renamed", "tier_mismatch", "pricing_type", "source_url",
-        "captured_at", "evidence_file", "notes", "baseline_notes",
+        "captured_at", "notes", "baseline_notes",
     ]
     return merged[columns].sort_values(
         ["platform", "baseline_tier", "plan"], na_position="last"

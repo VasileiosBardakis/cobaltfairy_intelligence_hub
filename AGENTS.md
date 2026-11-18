@@ -42,5 +42,6 @@ pnpm <command>
 - Raw supplied data stays in `cobaltfairy-data/`.
 - Use a single SQLite database, `intel.db`, at the repo root.
 - Taxonomy mappings live in `mappings.csv`; do not hardcode category mappings in analysis code.
-- Captured public pricing lives in `pricing_current.csv` with source URLs and evidence files.
+- Captured public pricing lives in `pricing_current.csv` with source URLs.
+- Captured public social posts live in `social_posts.csv`; coverage gaps are in `social_coverage.csv`.
 - Never commit `.env` or API keys.
