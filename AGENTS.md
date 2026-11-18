@@ -35,6 +35,9 @@ Market & Competitive Intelligence Hub prototype for Cobalt Fairy and FairyMail.
 # Run LLM theme labeling (requires DEEPSEEK_API_KEY)
 .\.venv\Scripts\python.exe theme_labeling.py
 
+# Generate deterministic signals
+.\.venv\Scripts\python.exe signals.py
+
 # Run tests
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 
