@@ -41,6 +41,29 @@ def evidence(quote="generative AI"):
     }]
 
 
+def pricing_evidence():
+    return [
+        {
+            "evidence_id": "pricing_baseline:MailerLite:Advanced:500",
+            "evidence_type": "pricing_baseline",
+            "quote": "MailerLite Advanced: $20/month at 500 subscribers",
+            "role": "supporting",
+        },
+        {
+            "evidence_id": "pricing:MailerLite:Power:500:subscribers",
+            "evidence_type": "pricing_current",
+            "quote": "MailerLite Power: $25/month at 500 subscribers",
+            "role": "supporting",
+        },
+        {
+            "evidence_id": "pricing_rename:MailerLite:Advanced:Power:500:subscribers",
+            "evidence_type": "pricing_rename",
+            "quote": "Plan renamed from Advanced to Power; Advanced is not a separate current plan.",
+            "role": "supporting",
+        },
+    ]
+
+
 class TestBriefChecker(unittest.TestCase):
     def test_verified_claim(self):
         output = {"positioning": "Test", "claims": [{
@@ -101,6 +124,64 @@ class TestBriefChecker(unittest.TestCase):
             output, signal(signal_type="pricing_change"), evidence()
         )
         self.assertEqual(claims[0]["verification_status"], "verified")
+
+    def test_renamed_plan_cannot_coexist(self):
+        output = {"positioning": "Test", "claims": [{
+            "claim": "The Advanced plan remains at $20.",
+            "evidence_ids": ["pricing_baseline:MailerLite:Advanced:500"],
+            "quote": "MailerLite Advanced: $20/month at 500 subscribers",
+        }]}
+        claims, _, _ = briefs.check_output(
+            output, signal(signal_type="pricing_change"), pricing_evidence()
+        )
+        self.assertEqual(claims[0]["verification_status"], "unsupported")
+        self.assertIn("renamed plan", claims[0]["checker_note"])
+
+    def test_unqualified_old_plan_claim_is_unsupported(self):
+        output = {"positioning": "Test", "claims": [{
+            "claim": "Advanced costs $20 per month.",
+            "evidence_ids": ["pricing_baseline:MailerLite:Advanced:500"],
+            "quote": "MailerLite Advanced: $20/month at 500 subscribers",
+        }]}
+        claims, _, _ = briefs.check_output(
+            output, signal(signal_type="pricing_change"), pricing_evidence()
+        )
+        self.assertEqual(claims[0]["verification_status"], "unsupported")
+
+    def test_baseline_qualified_old_plan_claim_is_allowed(self):
+        output = {"positioning": "Test", "claims": [{
+            "claim": "The baseline Advanced plan was $20 per month.",
+            "evidence_ids": ["pricing_baseline:MailerLite:Advanced:500"],
+            "quote": "MailerLite Advanced: $20/month at 500 subscribers",
+        }]}
+        claims, _, _ = briefs.check_output(
+            output, signal(signal_type="pricing_change"), pricing_evidence()
+        )
+        self.assertEqual(claims[0]["verification_status"], "verified")
+
+    def test_explicit_rename_claim_is_allowed(self):
+        output = {"positioning": "Test", "claims": [{
+            "claim": "Advanced was renamed to Power and is not a separate current plan.",
+            "evidence_ids": [
+                "pricing_rename:MailerLite:Advanced:Power:500:subscribers"
+            ],
+            "quote": "Plan renamed from Advanced to Power; Advanced is not a separate current plan.",
+        }]}
+        claims, _, _ = briefs.check_output(
+            output, signal(signal_type="pricing_change"), pricing_evidence()
+        )
+        self.assertEqual(claims[0]["verification_status"], "verified")
+
+    def test_renamed_plan_positioning_needs_review(self):
+        output = {
+            "positioning": "Power is higher priced while Advanced remains available.",
+            "claims": [],
+        }
+        _, status, note = briefs.check_output(
+            output, signal(signal_type="pricing_change"), pricing_evidence()
+        )
+        self.assertEqual(status, "needs_review")
+        self.assertIn("renamed plan", note)
 
 
 class TestGenerateBriefs(unittest.TestCase):

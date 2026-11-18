@@ -58,3 +58,4 @@ pnpm <command>
 - Captured public social posts live in `data/social_posts.csv`; coverage gaps are in `data/social_coverage.csv`.
 - Theme taxonomy is data-driven in `data/theme_taxonomy.csv`; LLM labels are written to `data/theme_labels.csv`.
 - Never commit `.env` or API keys.
+- the AI Solutions & Automations docx is GOSPEL, you have to look if what you are doing aligns with that that says.

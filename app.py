@@ -9,11 +9,22 @@ import streamlit as st
 
 import analysis
 import pricing
-import synthetic_demo
+try:
+    import synthetic_demo
+except ImportError:
+    synthetic_demo = None
 
 ROOT = Path(__file__).parent
 DATA = ROOT / "data"
 DB = DATA / "intel.db"
+BRIEF_COLUMNS = [
+    "brief_id", "signal_id", "model", "prompt_version", "input_hash",
+    "positioning", "checker_status", "checker_note", "created_at",
+]
+CLAIM_COLUMNS = [
+    "claim_id", "brief_id", "signal_id", "claim_text", "evidence_ids",
+    "quote", "verification_status", "checker_note", "created_at",
+]
 LOW_CONFIDENCE = 0.7
 STATUS_RANK = {"candidate": 0, "inferential": 1, "insufficient": 2}
 STATUS_TONES = {
@@ -200,21 +211,6 @@ section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: 
   font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase;
 }
 .metric-hint { margin-top: 5px; color: #8A90A0; font-size: 11px; }
-.insight-grid {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px; margin: 8px 0;
-}
-.insight-card { border: 1px solid var(--line); border-radius: 18px; padding: 17px 18px; }
-.insight-blue { background: var(--blue-soft); border-color: var(--blue-line); }
-.insight-mint { background: var(--mint-soft); border-color: #D4EFE5; }
-.insight-lavender { background: var(--lavender-soft); border-color: #E5DAF7; }
-.insight-peach { background: var(--peach-soft); border-color: #F7E0CD; }
-.insight-card h4 { margin: 0 0 6px; color: var(--ink); font-size: 13px; }
-.insight-card p { margin: 0; color: #5F6572; font-size: 12px; line-height: 1.55; }
-.insight-dot {
-  display: inline-block; width: 9px; height: 9px;
-  margin-right: 7px; border-radius: 50%;
-}
 div[data-testid="stVerticalBlockBorderWrapper"] {
   background: #FFFFFF;
   border: 1px solid var(--line) !important;
@@ -406,11 +402,11 @@ button:focus-visible {
   outline-offset: 2px;
 }
 @media (max-width: 1100px) {
-  .metric-grid, .insight-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hero { padding: 30px 26px; }
 }
 @media (max-width: 640px) {
-  .metric-grid, .insight-grid { grid-template-columns: 1fr; }
+  .metric-grid { grid-template-columns: 1fr; }
   .hero h1 { font-size: 2.4rem; }
 }
 </style>
@@ -487,32 +483,55 @@ st.set_page_config(page_title="Intelligence Hub", layout="wide")
 inject_css()
 
 
+def _query(con, sql, columns=None):
+    try:
+        return pd.read_sql_query(sql, con)
+    except Exception:
+        return pd.DataFrame(columns=columns or [])
+
+
 @st.cache_data(show_spinner=False)
 def load_data(mode):
-    with closing(sqlite3.connect(DB)) as con:
-        real_signals = pd.read_sql_query(
-            "SELECT * FROM signals ORDER BY signal_type, status, title", con
-        )
-        real_evidence = pd.read_sql_query(
-            "SELECT * FROM signal_evidence ORDER BY signal_id, evidence_type, evidence_id",
-            con,
-        )
-        real_briefs = pd.read_sql_query(
-            "SELECT * FROM briefs ORDER BY created_at, brief_id", con
-        )
-        real_claims = pd.read_sql_query(
-            "SELECT * FROM claims ORDER BY created_at, claim_id", con
-        )
-        real_coverage = pd.read_sql_query(
-            "SELECT * FROM social_coverage ORDER BY brand, platform", con
-        )
-        real_social = pd.read_sql_query("SELECT * FROM social_posts", con)
-        baseline, current = pricing.load_pricing(con)
-        cf = pd.read_sql_query("SELECT * FROM cf_performance", con)
-        markets = pd.read_sql_query("SELECT * FROM klytics_markets", con)
+    if not DB.exists():
+        return {"error": f"Database not found at {DB}."}
+    if mode == "synthetic" and synthetic_demo is None:
+        return {"error": "Synthetic demo files are not available."}
 
-    real_theme_labels = pd.read_csv(
-        DATA / "theme_labels.csv", dtype=str, keep_default_na=False
+    with closing(sqlite3.connect(DB)) as con:
+        try:
+            real_signals = pd.read_sql_query(
+                "SELECT * FROM signals ORDER BY signal_type, status, title", con
+            )
+            real_evidence = pd.read_sql_query(
+                "SELECT * FROM signal_evidence ORDER BY signal_id, evidence_type, evidence_id",
+                con,
+            )
+        except sqlite3.OperationalError as exc:
+            return {"error": f"Database is not initialized: {exc}"}
+        real_briefs = _query(
+            con, "SELECT * FROM briefs ORDER BY created_at, brief_id",
+            BRIEF_COLUMNS,
+        )
+        real_claims = _query(
+            con, "SELECT * FROM claims ORDER BY created_at, claim_id",
+            CLAIM_COLUMNS,
+        )
+        try:
+            real_coverage = pd.read_sql_query(
+                "SELECT * FROM social_coverage ORDER BY brand, platform", con
+            )
+            real_social = pd.read_sql_query("SELECT * FROM social_posts", con)
+            baseline, current = pricing.load_pricing(con)
+            cf = pd.read_sql_query("SELECT * FROM cf_performance", con)
+            markets = pd.read_sql_query("SELECT * FROM klytics_markets", con)
+        except sqlite3.OperationalError as exc:
+            return {"error": f"Database is not initialized: {exc}"}
+
+    theme_path = DATA / "theme_labels.csv"
+    real_theme_labels = (
+        pd.read_csv(theme_path, dtype=str, keep_default_na=False)
+        if theme_path.exists()
+        else pd.DataFrame(columns=["post_id", "theme_id", "confidence"])
     )
     mappings = analysis.load_mappings()
     approved = mappings[mappings["review_status"] == "approved"]
@@ -670,6 +689,12 @@ def render_sidebar(data):
               {_side_pill("inferential", "violet")}
               {_side_pill("insufficient", "amber")}
             </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        render_legend()
+        st.markdown(
+            f"""
             <div class="side-note">
               Signals generated {_esc(refreshed_text)}.<br>
               {_esc('Synthetic social + cross-source fixture; CF/pricing real. Not real evidence.' if data['mode'] == 'synthetic' else 'Read-only prototype. Cached AI output only; no live AI calls.')}
@@ -715,6 +740,7 @@ def render_metric_cards(data):
     signals = data["signals"]
     claims = data["claims"]
     reviewable = signals[signals["status"].isin(["candidate", "inferential"])]
+    cross_count = int((signals["signal_type"] == "cross_source").sum())
     verified = int((claims["verification_status"] == "verified").sum())
     gaps = int(data["coverage"]["status"].ne("complete").sum())
     claim_label = (
@@ -733,10 +759,10 @@ def render_metric_cards(data):
         else "multi-source co-occurrence"
     )
     items = [
-        (len(reviewable), "Signals to review", "candidate + inferential", "cobalt"),
-        (cross_count, "Cross-source patterns", cross_hint, "gold"),
-        (f"{verified}/{len(claims)}", claim_label, claim_hint, "green"),
-        (gaps, "Coverage caveats", "captured source limits", "amber"),
+        (len(reviewable), "Signals to review", "candidate + inferential", "blue"),
+        (cross_count, "Cross-source patterns", cross_hint, "lavender"),
+        (f"{verified}/{len(claims)}", claim_label, claim_hint, "mint"),
+        (gaps, "Coverage caveats", "captured source limits", "peach"),
     ]
     cards = "".join(
         f'<div class="metric-card {tone}">'
@@ -749,21 +775,14 @@ def render_metric_cards(data):
     st.markdown(f'<div class="metric-grid">{cards}</div>', unsafe_allow_html=True)
 
 
-def render_insight_cards():
-    items = [
-        ("Observed", "Quotes and price points captured directly from sources.", "blue", "#2F63F7"),
-        ("Calculated", "Deterministic metrics such as units/day, price gaps and mapping confidence.", "mint", "#2E9B7A"),
-        ("AI-assisted", "Cached theme labels and positioning briefs, checked against cited evidence.", "lavender", "#7C5CBF"),
-        ("Insufficient", "Below the evidence threshold and never presented as a trend.", "peach", "#F0A05A"),
-    ]
-    cards = "".join(
-        f'<div class="insight-card insight-{tone}">'
-        f'<h4><span class="insight-dot" style="background:{color}"></span>{_esc(title)}</h4>'
-        f"<p>{_esc(text)}</p>"
-        f"</div>"
-        for title, text, tone, color in items
-    )
-    st.markdown(f'<div class="insight-grid">{cards}</div>', unsafe_allow_html=True)
+def render_legend():
+    with st.expander("How to read this hub"):
+        st.markdown(
+            "**Observed** — source quotes and price points  \n"
+            "**Calculated** — deterministic metrics  \n"
+            "**AI-assisted** — cached, evidence-checked output  \n"
+            "**Insufficient** — not enough evidence for a trend"
+        )
 
 
 def render_coverage_cards(data):
@@ -1155,7 +1174,7 @@ def render_error_log(data):
 
 
 if "use_real_social" not in st.session_state:
-    st.session_state.use_real_social = False
+    st.session_state.use_real_social = True
 
 source_left, source_right = st.columns([8, 2])
 with source_left:
@@ -1181,6 +1200,12 @@ with source_right:
 
 mode = "real" if st.session_state.use_real_social else "synthetic"
 data = load_data(mode)
+if data.get("error"):
+    st.error(
+        data["error"]
+        + " Run ingest.py, signals.py, and briefs.py to initialize the dashboard."
+    )
+    st.stop()
 signals = data["signals"]
 evidence = data["evidence"]
 
@@ -1203,9 +1228,6 @@ overview_tab, cf_tab, fairy_tab, evidence_tab = st.tabs(
 )
 
 with overview_tab:
-    st.subheader("How to read this hub")
-    render_insight_cards()
-
     st.subheader("Key findings to review")
     st.caption(
         "Highest-priority signal per source type. Candidate and inferential "
@@ -1265,10 +1287,6 @@ with overview_tab:
                 ),
             },
         )
-
-    st.subheader("Signal register")
-    with st.expander("Browse all signals"):
-        show_signals(signals, evidence, "overview")
 
 with cf_tab:
     st.subheader("Market vs portfolio")

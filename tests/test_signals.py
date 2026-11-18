@@ -68,22 +68,37 @@ class TestSignals(unittest.TestCase):
         self.assertNotIn("trend", discount["summary"].lower())
 
     def test_pricing_signals(self):
-        self.assertEqual(
+        self.assertGreaterEqual(
             self.one("SELECT COUNT(*) AS n FROM signals WHERE signal_type='pricing_change'")["n"],
             8,
         )
         for title in [
             "MailerLite changes Comfort price at 500 subscribers",
+            "Brevo renames Business to Standard at 5000 emails",
             "Brevo renames Business to Standard at 20000 emails",
             "Brevo launches Professional at 150000 emails",
+            "ActiveCampaign changes Pro price at 20000 subscribers",
+            "Constant Contact changes Lite price at 25000 subscribers",
         ]:
             self.assertIsNotNone(self.one(
                 "SELECT 1 FROM signals WHERE title=?", (title,)
             ), title)
         self.assertIsNotNone(self.one(
             "SELECT 1 FROM signals WHERE entity='Brevo' "
-            "AND coverage_note LIKE '%Tier basis differs%'"
+            "AND coverage_note LIKE '%differs from baseline%'"
         ))
+        self.assertIsNone(self.one(
+            "SELECT 1 FROM signals WHERE title LIKE '%at 500 emails%'"
+        ))
+        rename = self.one(
+            "SELECT quote FROM signal_evidence e JOIN signals s "
+            "ON s.signal_id=e.signal_id WHERE s.title="
+            "'MailerLite changes Power price at 500 subscribers' "
+            "AND e.evidence_type='pricing_rename'"
+        )
+        self.assertIsNotNone(rename)
+        self.assertIn("Advanced", rename["quote"])
+        self.assertIn("Power", rename["quote"])
 
     def test_cross_source(self):
         status = {

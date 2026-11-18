@@ -166,10 +166,10 @@ def _pricing_signals(store, changes):
     ]
     for row in rows.to_dict("records"):
         current_tier = int(row["current_tier"])
-        tier = (
-            f"{int(row['baseline_tier'])} {row['tier_basis']}"
-            if pd.notna(row["baseline_tier"])
-            else f"{current_tier} {row['tier_basis']}"
+        tier = f"{current_tier} {row['tier_basis']}"
+        baseline_tier = (
+            f"{int(row['baseline_tier'])} subscribers"
+            if pd.notna(row["baseline_tier"]) else "an unknown baseline tier"
         )
         evidence = [_current_price_evidence(
             row["platform"], row["plan"], row["price"],
@@ -179,6 +179,19 @@ def _pricing_signals(store, changes):
             evidence.append(_baseline_price_evidence(
                 row["baseline_platform"], row["baseline_plan"],
                 row["baseline_price"], row["baseline_tier"],
+            ))
+
+        rename = ""
+        if row["plan_renamed"]:
+            rename = (
+                f"Plan renamed from {row['baseline_plan']} to {row['plan']}; "
+                f"{row['baseline_plan']} is not a separate current plan."
+            )
+            evidence.append(_ev(
+                f"pricing_rename:{row['platform']}:{row['baseline_plan']}:"
+                f"{row['plan']}:{current_tier}:{row['tier_basis']}",
+                "pricing_rename",
+                rename,
             ))
 
         if row["change_type"] == "new_plan":
@@ -194,21 +207,23 @@ def _pricing_signals(store, changes):
             )
             summary = (
                 f"Plan renamed from {row['baseline_plan']} to {row['plan']}; "
-                f"monthly price unchanged at ${row['price']:g} for {tier}."
+                f"monthly price unchanged at ${row['price']:g} for {tier} "
+                f"(baseline {baseline_tier})."
             )
         else:
             title = f"{row['platform']} changes {row['plan']} price at {tier}"
             summary = (
-                f"Monthly price changed from ${row['baseline_price']:g} to "
-                f"${row['price']:g} ({row['price_change_pct']:+.1f}%) for {tier}."
-            )
+                f"{rename} Monthly price changed from ${row['baseline_price']:g} "
+                f"at {baseline_tier} to ${row['price']:g} at {tier} "
+                f"({row['price_change_pct']:+.1f}%)."
+            ).strip()
 
         note = (
             f"Monthly USD; baseline Sep 2025; captured {row['captured_at']}; "
             "promotions excluded."
         )
         if row["tier_mismatch"]:
-            note += " Tier basis differs from baseline."
+            note += " Tier basis or tier differs from baseline."
         _add(
             store, "pricing_change",
             f"{row['platform']}:{row['plan']}:{tier}:{row['change_type']}",
@@ -217,7 +232,7 @@ def _pricing_signals(store, changes):
         )
 
 
-def _pricing_evidence(brand, baseline, current):
+def _pricing_evidence(brand, baseline, current, changes):
     rows = current[current["platform"] == brand]
     if rows.empty:
         return []
@@ -240,7 +255,19 @@ def _pricing_evidence(brand, baseline, current):
         )
         for row in baseline_rows.to_dict("records")
     ]
-    return current_evidence + baseline_evidence
+    rename_evidence = [
+        _ev(
+            f"pricing_rename:{brand}:{row['baseline_plan']}:{row['plan']}:"
+            f"{int(row['current_tier'])}:{row['tier_basis']}",
+            "pricing_rename",
+            f"Plan renamed from {row['baseline_plan']} to {row['plan']}; "
+            f"{row['baseline_plan']} is not a separate current plan.",
+        )
+        for row in changes[
+            (changes["platform"] == brand) & changes["plan_renamed"]
+        ].to_dict("records")
+    ]
+    return current_evidence + baseline_evidence + rename_evidence
 
 
 def _cf_signals(store, con):
@@ -396,7 +423,7 @@ def _cross_source_signals(store, labels, label_map, baseline, current, changes):
             "Cross-source co-occurrence only; no causal link. "
             "Facebook only; LinkedIn and Instagram unavailable.",
             _social_evidence(brand_labels)
-            + _pricing_evidence(brand, baseline, current),
+            + _pricing_evidence(brand, baseline, current, changes),
         )
 
 

@@ -22,6 +22,9 @@ TREND_WORDS = {
     "rising", "declining", "declined", "shift", "shifting", "momentum",
     "recurring",
 }
+COEXIST_WORDS = {
+    "remains", "remain", "still", "coexists", "coexist",
+}
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS briefs (
@@ -67,6 +70,7 @@ Rules:
 - If you provide a quote, it must be copied exactly from a cited evidence quote.
 - Claims without a quote are inferential.
 - If the signal status is insufficient, state that evidence is limited and do not use trend, pattern, growth, shift or recurring language.
+- If evidence includes a pricing_rename, the old and new names are the same plan over time. Never say the old plan remains, coexists, or is a separate current plan.
 - Keep the positioning to at most 80 words.
 """
 
@@ -135,8 +139,35 @@ def _has_trend(text):
     return bool(tokens & TREND_WORDS)
 
 
+def _rename_context(evidence):
+    names = set()
+    for item in evidence:
+        if item["evidence_type"] != "pricing_rename":
+            continue
+        match = re.search(
+            r"plan renamed from (.+?) to .+?;", _norm(item["quote"])
+        )
+        if match:
+            names.add(match.group(1).strip())
+    return names
+
+
+def _rename_issue(text, renamed_from):
+    if not renamed_from:
+        return False
+    text = _norm(text)
+    tokens = set(re.findall(r"[a-z]+", text))
+    mentions_old = any(name in text for name in renamed_from)
+    qualified = tokens & {
+        "baseline", "former", "formerly", "previous", "previously",
+        "renamed", "was", "old",
+    }
+    return (mentions_old and not qualified) or bool(tokens & COEXIST_WORDS)
+
+
 def check_output(output, signal, evidence):
     by_id = {item["evidence_id"]: item["quote"] for item in evidence}
+    renamed_from = _rename_context(evidence)
     insufficient = (
         signal["status"] == "insufficient"
         and signal["signal_type"] in {"social_theme", "cross_source"}
@@ -164,6 +195,8 @@ def check_output(output, signal, evidence):
 
         if insufficient and _has_trend(claim):
             status, note = "unsupported", "trend language with insufficient evidence"
+        if _rename_issue(claim, renamed_from):
+            status, note = "unsupported", "treats a renamed plan as a current separate plan"
 
         claims.append({
             "claim_text": claim,
@@ -173,6 +206,11 @@ def check_output(output, signal, evidence):
             "checker_note": note,
         })
 
+    positioning = str(output.get("positioning") or "")
+    if _rename_issue(positioning, renamed_from):
+        return claims, "needs_review", (
+            "positioning treats a renamed plan as a current separate plan"
+        )
     return claims, "auto_checked", ""
 
 
@@ -190,6 +228,19 @@ def generate_briefs(db_path=DB, force=False, client=None):
     con = sqlite3.connect(db_path)
     con.executescript(SCHEMA)
     signals = pd.read_sql_query("SELECT * FROM signals ORDER BY signal_id", con)
+    signal_ids = tuple(signals["signal_id"])
+    if signal_ids:
+        placeholders = ",".join("?" * len(signal_ids))
+        con.execute(
+            f"DELETE FROM claims WHERE signal_id NOT IN ({placeholders})", signal_ids
+        )
+        con.execute(
+            f"DELETE FROM briefs WHERE signal_id NOT IN ({placeholders})", signal_ids
+        )
+    else:
+        con.execute("DELETE FROM claims")
+        con.execute("DELETE FROM briefs")
+    con.commit()
 
     created = 0
     for signal in signals.to_dict("records"):
