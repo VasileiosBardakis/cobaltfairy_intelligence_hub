@@ -1,0 +1,10 @@
+brand,brand_type,network,platform,status,posts_captured,window_start,window_end,captured_at,notes,data_origin,dataset_label,is_synthetic
+AlphaMail,fictional,Meta,Facebook,synthetic_demo,14,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+AlphaMail,fictional,Meta,Instagram,synthetic_demo,13,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+AlphaMail,fictional,LinkedIn,LinkedIn,synthetic_demo,13,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+BetaSend,fictional,Meta,Facebook,synthetic_demo,13,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+BetaSend,fictional,Meta,Instagram,synthetic_demo,14,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+BetaSend,fictional,LinkedIn,LinkedIn,synthetic_demo,13,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+GammaMail,fictional,Meta,Facebook,synthetic_demo,13,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+GammaMail,fictional,Meta,Instagram,synthetic_demo,13,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
+GammaMail,fictional,LinkedIn,LinkedIn,synthetic_demo,14,2026-08-18,2026-11-18,2026-11-18,Synthetic fixture coverage; fictional brand; not real evidence.,synthetic_demo,synthetic_demo_v1,true
