@@ -38,6 +38,9 @@ Market & Competitive Intelligence Hub prototype for Cobalt Fairy and FairyMail.
 # Generate deterministic signals
 .\.venv\Scripts\python.exe signals.py
 
+# Generate AI positioning briefs and checked claims
+.\.venv\Scripts\python.exe briefs.py
+
 # Run tests
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 
