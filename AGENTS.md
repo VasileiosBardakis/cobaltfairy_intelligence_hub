@@ -26,6 +26,9 @@ Market & Competitive Intelligence Hub prototype for Cobalt Fairy and FairyMail.
 # Run ingestion
 .\.venv\Scripts\python.exe ingest.py
 
+# Run the analysis smoke check
+.\.venv\Scripts\python.exe analysis.py
+
 # Node/JS tooling
 pnpm <command>
 ```
@@ -35,4 +38,5 @@ pnpm <command>
 - Keep the implementation minimal; avoid unnecessary abstraction.
 - Raw supplied data stays in `cobaltfairy-data/`.
 - Use a single SQLite database, `intel.db`, at the repo root.
+- Taxonomy mappings live in `mappings.csv`; do not hardcode category mappings in analysis code.
 - Never commit `.env` or API keys.

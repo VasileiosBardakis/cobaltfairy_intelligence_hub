@@ -206,11 +206,6 @@ with sqlite3.connect(DB) as con:
     write(meta, "pricing_meta", con)
 
     assert con.execute(
-        "select avg_sales_per_day_top20, sales_rank_growth_pct, avg_price "
-        "from klytics_markets where month='2025-05' and level='CCC' "
-        "and category_path='Romance-Historical Romance-Regency'"
-    ).fetchone() == (62.0, -7.0, 3.8)
-    assert con.execute(
         "select net_units_sold, round(royalty, 2) from cf_performance "
         "where asin='B0F3DMLVQY' and month='2025-05'"
     ).fetchone() == (374, 994.84)

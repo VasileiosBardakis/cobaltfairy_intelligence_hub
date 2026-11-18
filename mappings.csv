@@ -1,0 +1,9 @@
+source_table,source_field,source_label,target_table,target_level,target_path,relationship,confidence,method,rationale,review_status
+cf_performance,subgenre,Regency,klytics_markets,CCC,Romance-Historical Romance-Regency,primary,0.95,manual,Exact K-lytics subcategory,approved
+cf_performance,subgenre,Regency,klytics_markets,CC,Romance-Historical Romance,secondary,0.75,manual,Broader historical romance comparison,approved
+cf_performance,subgenre,Scottish / Highlander,klytics_markets,CCC,Romance-Historical Romance-Scottish,primary,0.95,manual,Exact K-lytics subcategory,approved
+cf_performance,subgenre,Scottish / Highlander,klytics_markets,CC,Romance-Historical Romance,secondary,0.75,manual,Broader historical romance comparison,approved
+cf_performance,subgenre,Western,klytics_markets,CC,Romance-Western & Frontier,primary,0.6,manual,Label match but broader than historical western,approved
+cf_performance,subgenre,Western,klytics_markets,CCC,Romance-Historical Romance-American,secondary,0.55,manual,Historical American category is narrower but less specific to westerns,approved
+cf_performance,subgenre,Regency Collection,klytics_markets,CC,Romance-Collections & Anthologies,primary,0.7,manual,Boxset format and price align with collections,approved
+cf_performance,subgenre,Regency Collection,klytics_markets,CCC,Romance-Historical Romance-Regency,secondary,0.45,manual,Regency content but regular-title comparison,approved
