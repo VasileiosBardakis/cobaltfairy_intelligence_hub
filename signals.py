@@ -61,6 +61,14 @@ def _ev(evidence_id, evidence_type, quote):
     }
 
 
+def _first(frame, **eq):
+    for column, value in eq.items():
+        frame = frame[frame[column] == value]
+        if frame.empty:
+            return None
+    return frame.iloc[0].to_dict()
+
+
 def _id(signal_type, key, start, end, rule):
     raw = "|".join([signal_type, key, str(start), str(end), rule])
     return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:16]
@@ -133,6 +141,24 @@ def _social_signals(store, labels, label_map):
         )
 
 
+def _current_price_evidence(platform, plan, price, tier, basis):
+    tier = int(tier)
+    return _ev(
+        f"pricing:{platform}:{plan}:{tier}:{basis}",
+        "pricing_current",
+        f"{platform} {plan}: ${price:g}/month at {tier} {basis}",
+    )
+
+
+def _baseline_price_evidence(platform, plan, price, tier):
+    tier = int(tier)
+    return _ev(
+        f"pricing_baseline:{platform}:{plan}:{tier}",
+        "pricing_baseline",
+        f"{platform} {plan}: ${price:g}/month at {tier} subscribers",
+    )
+
+
 def _pricing_signals(store, changes):
     rows = changes[
         changes["change_type"].isin(["price_change", "new_plan"])
@@ -145,20 +171,14 @@ def _pricing_signals(store, changes):
             if pd.notna(row["baseline_tier"])
             else f"{current_tier} {row['tier_basis']}"
         )
-        evidence = [_ev(
-            f"pricing:{row['platform']}:{row['plan']}:{current_tier}:{row['tier_basis']}",
-            "pricing_current",
-            f"{row['platform']} {row['plan']}: ${row['price']:g}/month at "
-            f"{current_tier} {row['tier_basis']}",
+        evidence = [_current_price_evidence(
+            row["platform"], row["plan"], row["price"],
+            current_tier, row["tier_basis"],
         )]
         if pd.notna(row["baseline_price"]):
-            evidence.append(_ev(
-                f"pricing_baseline:{row['baseline_platform']}:{row['baseline_plan']}:"
-                f"{int(row['baseline_tier'])}",
-                "pricing_baseline",
-                f"{row['baseline_platform']} {row['baseline_plan']}: "
-                f"${row['baseline_price']:g}/month at "
-                f"{int(row['baseline_tier'])} subscribers",
+            evidence.append(_baseline_price_evidence(
+                row["baseline_platform"], row["baseline_plan"],
+                row["baseline_price"], row["baseline_tier"],
             ))
 
         if row["change_type"] == "new_plan":
@@ -207,22 +227,16 @@ def _pricing_evidence(brand, baseline, current):
         & baseline["monthly_price_usd"].notna()
     ]
     current_evidence = [
-        _ev(
-            f"pricing:{row['platform']}:{row['plan']}:{int(row['current_tier'])}:"
-            f"{row['tier_basis']}",
-            "pricing_current",
-            f"{row['platform']} {row['plan']}: ${row['price']:g}/month at "
-            f"{int(row['current_tier'])} {row['tier_basis']}",
+        _current_price_evidence(
+            row["platform"], row["plan"], row["price"],
+            row["current_tier"], row["tier_basis"],
         )
         for row in rows.to_dict("records")
     ]
     baseline_evidence = [
-        _ev(
-            f"pricing_baseline:{row['platform']}:{row['plan']}:"
-            f"{int(row['subscriber_tier'])}",
-            "pricing_baseline",
-            f"{row['platform']} {row['plan']}: ${row['monthly_price_usd']:g}/month "
-            f"at {int(row['subscriber_tier'])} subscribers",
+        _baseline_price_evidence(
+            row["platform"], row["plan"], row["monthly_price_usd"],
+            row["subscriber_tier"],
         )
         for row in baseline_rows.to_dict("records")
     ]
@@ -247,16 +261,18 @@ def _cf_signals(store, con):
         (summary["relationship"] == "primary") & (summary["month"] == latest)
     ]
     for row in primary.to_dict("records"):
-        change = changes[
-            (changes["source_label"] == row["source_label"])
-            & (changes["relationship"] == "primary")
-        ].iloc[0].to_dict()
+        change = _first(
+            changes, source_label=row["source_label"], relationship="primary"
+        )
+        if change is None:
+            continue
         prev, latest_month = change["change_period"].split(" -> ")
-        mapping = resolved[
-            (resolved["source_label"] == row["source_label"])
-            & (resolved["relationship"] == "primary")
-            & (resolved["month"] == latest_month)
-        ].iloc[0].to_dict()
+        mapping = _first(
+            resolved, source_label=row["source_label"],
+            relationship="primary", month=latest_month,
+        )
+        if mapping is None:
+            continue
 
         m = metrics[
             (metrics["source_label"] == row["source_label"])

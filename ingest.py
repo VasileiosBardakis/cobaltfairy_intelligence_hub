@@ -163,10 +163,11 @@ P_RENAME = {
     "Pricing Type": "pricing_type", "Baseline Period": "baseline_period",
     "Notes": "notes",
 }
-pricing = pd.read_excel(
+pricing_sheets = pd.read_excel(
     DATA / "FairyMail_Competitor_Pricing_Sep2025.xlsx",
-    sheet_name="Normalized Price Points",
-).rename(columns=P_RENAME)
+    sheet_name=["Normalized Price Points", "Pricing Baseline"],
+)
+pricing = pricing_sheets["Normalized Price Points"].rename(columns=P_RENAME)
 pricing["source_row"] = pricing.index + 2
 pricing["source_file"] = "FairyMail_Competitor_Pricing_Sep2025.xlsx"
 pricing["subscriber_tier"] = num(pricing["subscriber_tier"]).astype("Int64")
@@ -187,10 +188,7 @@ M_RENAME = {
     "Baseline Period": "baseline_period", "Original Currency": "original_currency",
     "Notes": "notes",
 }
-meta = pd.read_excel(
-    DATA / "FairyMail_Competitor_Pricing_Sep2025.xlsx",
-    sheet_name="Pricing Baseline",
-).rename(columns=M_RENAME)
+meta = pricing_sheets["Pricing Baseline"].rename(columns=M_RENAME)
 meta["source_row"] = meta.index + 2
 meta["source_file"] = "FairyMail_Competitor_Pricing_Sep2025.xlsx"
 meta["total_tiers"] = meta["total_tiers"].astype("string")
@@ -237,18 +235,16 @@ with sqlite3.connect(DB) as con:
     write(cf, "cf_performance", con)
     write(pricing, "pricing_baseline", con)
     write(meta, "pricing_meta", con)
-    if current.empty:
-        con.execute("DROP TABLE IF EXISTS pricing_current")
-    else:
-        write(current, "pricing_current", con)
-    if social.empty:
-        con.execute("DROP TABLE IF EXISTS social_posts")
-    else:
-        write(social, "social_posts", con)
-    if coverage.empty:
-        con.execute("DROP TABLE IF EXISTS social_coverage")
-    else:
-        write(coverage, "social_coverage", con)
+    optional = [
+        ("pricing_current", current),
+        ("social_posts", social),
+        ("social_coverage", coverage),
+    ]
+    for table, frame in optional:
+        if frame.empty:
+            con.execute(f"DROP TABLE IF EXISTS {table}")
+        else:
+            write(frame, table, con)
 
     assert con.execute(
         "select net_units_sold, round(royalty, 2) from cf_performance "

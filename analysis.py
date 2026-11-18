@@ -1,6 +1,4 @@
-import re
 import sqlite3
-from difflib import SequenceMatcher
 from pathlib import Path
 
 import pandas as pd
@@ -8,7 +6,6 @@ import pandas as pd
 ROOT = Path(__file__).parent
 DB = ROOT / "data" / "intel.db"
 MAPPINGS = ROOT / "data" / "mappings.csv"
-IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def load_mappings(path=MAPPINGS):
@@ -73,21 +70,6 @@ def unmapped_labels(source, source_table, source_field, mappings):
         & (mappings["review_status"] == "approved")
     ]
     return sorted(labels - set(approved["source_label"]))
-
-
-def _similarity(label, path):
-    label, path = label.lower(), path.lower()
-    sequence = SequenceMatcher(None, label, path).ratio()
-    label_tokens = set(re.findall(r"[a-z0-9]+", label))
-    path_tokens = set(re.findall(r"[a-z0-9]+", path))
-    overlap = len(label_tokens & path_tokens) / max(1, len(label_tokens))
-    return round(0.5 * sequence + 0.5 * overlap, 3)
-
-
-def suggest_mappings(label, target, target_level, top_n=3):
-    paths = target.loc[target["level"] == target_level, "category_path"].dropna().unique()
-    ranked = sorted(((_similarity(label, path), path) for path in paths), reverse=True)[:top_n]
-    return pd.DataFrame(ranked, columns=["score", "target_path"]).assign(target_level=target_level)
 
 
 def mapped_metrics(source, resolved, source_table):
@@ -192,29 +174,6 @@ def same_title_change(metrics, id_col="asin", min_titles=5):
     changes["change_period"] = f"{previous} -> {latest}"
     changes["insufficient_titles"] = changes["same_title_n"] < min_titles
     return changes
-
-
-def market_view(con, table, level, month=None, search=None,
-                min_sales=None, min_growth=None, limit=200):
-    if not IDENTIFIER.match(table):
-        raise ValueError(f"Invalid table name: {table!r}")
-    if month is None:
-        month = con.execute(f'SELECT MAX(month) FROM "{table}"').fetchone()[0]
-
-    query = f'SELECT * FROM "{table}" WHERE level = ? AND month = ?'
-    params = [level, month]
-    if search:
-        query += " AND category_path LIKE ?"
-        params.append(f"%{search}%")
-    if min_sales is not None:
-        query += " AND avg_sales_per_day_top20 >= ?"
-        params.append(min_sales)
-    if min_growth is not None:
-        query += " AND sales_rank_growth_pct >= ?"
-        params.append(min_growth)
-    query += " ORDER BY avg_sales_per_day_top20 DESC LIMIT ?"
-    params.append(limit)
-    return pd.read_sql_query(query, con, params=params)
 
 
 def main():
