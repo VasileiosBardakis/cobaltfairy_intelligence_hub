@@ -9,42 +9,18 @@ def render_overview(data):
 
     st.subheader("Key findings to review")
     st.caption(
-        "Highest-priority signal per source type, sorted for review. "
-        "Low-evidence items stay in the uncertainty list."
+        "Highest-priority CF, pricing and social signal, sorted for review. "
+        "Cross-source relationships follow separately. Low-evidence items stay "
+        "in the uncertainty list."
     )
-    for row in _top_per_type(signals, 1).itertuples(index=False):
+    primary = signals[signals["signal_type"] != "cross_source"]
+    for row in _top_per_type(primary, 1).itertuples(index=False):
         render_signal_card(row, data)
 
     st.subheader("Cross-source relationships")
     cross = signals[signals["signal_type"] == "cross_source"]
     for row in _prioritized(cross).itertuples(index=False):
         render_signal_card(row, data)
-
-    st.subheader("AI-assisted layer")
-    claims = data["claims"]
-    ai_metrics = st.columns(4)
-    ai_metrics[0].metric("Theme labels", len(data["theme_labels"]))
-    ai_metrics[1].metric("Cached briefs", len(data["briefs"]))
-    ai_metrics[2].metric(
-        "Claims with source quote",
-        int((claims["verification_status"] == "verified").sum()),
-    )
-    ai_metrics[3].metric(
-        "Claims needing review",
-        int((claims["verification_status"] == "inferential").sum()),
-    )
-    if data["mode"] == "synthetic":
-        st.caption(
-            "Synthetic social and cross-source labels/briefs are fixture-generated; "
-            "pricing and CF briefs remain cached AI output. "
-            "Switch to real data for the full AI layer."
-        )
-    else:
-        st.caption(
-            "AI helps label social themes and draft positioning briefs. "
-            "Every theme label must quote the post; claims are checked against the "
-            "cited source. Unsupported claims are isolated in the Evidence tab."
-        )
 
     st.subheader("Uncertainty cases")
     uncertain = _uncertain(signals)

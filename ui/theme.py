@@ -28,7 +28,6 @@ SIGNAL_LABELS = {
 }
 EVIDENCE_LABELS = {
     "social_post": "Social post",
-    "synthetic_social_post": "Synthetic social post",
     "pricing_current": "Current pricing",
     "pricing_baseline": "Baseline pricing",
     "klytics_market": "Market report",
@@ -39,13 +38,6 @@ CLAIM_LABELS = {
     "verified": "Source quote",
     "inferential": "Inference",
     "unsupported": "Unsupported",
-}
-CF_COLORS = {
-    "CF up, market down": "#2E9B7A",
-    "CF down, market up": "#D64A5A",
-    "CF up, market up": "#2F63F7",
-    "CF down, market down": "#F0A05A",
-    "not comparable": "#9AA1B2",
 }
 PLATFORM_COLORS = [
     "#2F63F7", "#7C5CBF", "#F0A05A", "#2E9B7A", "#D64A5A", "#6B7280",
@@ -153,8 +145,19 @@ section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p { color: 
 .side-pill-cobalt { background: var(--cobalt); color: #FFFFFF; }
 .side-pill-violet { background: var(--lavender-soft); color: #6841B4; }
 .side-pill-amber { background: var(--peach-soft); color: #B5651E; }
-.legend-note {
-  margin: 8px 0 0; color: #5F6572; font-size: 12px; line-height: 1.6;
+.legend-block { margin: 0 0 16px; }
+.legend-block:last-child { margin-bottom: 4px; }
+.legend-heading {
+  color: var(--muted); font-size: 9px; font-weight: 800;
+  letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 9px;
+}
+.legend-item {
+  display: flex; align-items: baseline; gap: 9px; margin-bottom: 8px;
+}
+.legend-item:last-child { margin-bottom: 0; }
+.legend-item .pill { flex: 0 0 auto; }
+.legend-desc {
+  color: #5F6572; font-size: 11px; line-height: 1.45;
 }
 .hero {
   position: relative; overflow: hidden;
@@ -488,7 +491,8 @@ def _style_fig(fig, height=None):
             orientation="h",
             yanchor="bottom",
             y=1.02,
-            x=0,
+            x=1,
+            xanchor="right",
             bgcolor="rgba(0,0,0,0)",
         ),
         margin=dict(l=8, r=8, t=54, b=8),

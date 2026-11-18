@@ -11,7 +11,7 @@ from ui.theme import inject_css
 st.set_page_config(page_title="Intelligence Hub", layout="wide")
 inject_css()
 
-data = load_data("real")
+data = load_data()
 if data.get("error"):
     st.error(
         data["error"]

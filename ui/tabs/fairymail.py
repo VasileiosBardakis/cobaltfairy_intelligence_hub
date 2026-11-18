@@ -2,45 +2,27 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from ..components import render_coverage_cards, render_signal_card, show_signals
+from ..components import render_coverage_cards, render_signal_card
 from ..data import (
     _pricing_view,
-    _prioritized,
     _span,
     _top_per_type,
-    _uncertain,
 )
 from ..theme import PLATFORM_COLORS, _style_fig
 
 
 def render_fairymail(data):
     signals = data["signals"]
-    evidence = data["evidence"]
 
     st.subheader("Competitive change feed")
-    interpretation_label = (
-        "Fixture interpretation"
-        if data["mode"] == "synthetic"
-        else "AI interpretation"
-    )
     st.caption(
         "Pricing and social signals are ranked by review status and evidence strength. "
-        f"{interpretation_label} is shown only with its source evidence."
+        "AI interpretation is shown only with its source evidence."
     )
     fairy_signals = signals[
         signals["signal_type"].isin(["pricing_change", "social_theme"])
     ]
     for row in _top_per_type(fairy_signals, 2).itertuples(index=False):
-        render_signal_card(row, data)
-
-    st.subheader("Cross-source context")
-    if data["mode"] == "synthetic":
-        st.caption(
-            "Synthetic cross-source demo: fictional brands, synthetic pricing, "
-            "and synthetic posts. Not real competitor evidence."
-        )
-    cross = signals[signals["signal_type"] == "cross_source"]
-    for row in _prioritized(cross).itertuples(index=False):
         render_signal_card(row, data)
 
     st.subheader("Pricing comparison")
@@ -87,34 +69,17 @@ def render_fairymail(data):
             )
 
     st.subheader("Social theme signals")
-    if data["mode"] == "synthetic":
-        st.caption(
-            "Synthetic social demo — fictional brands and posts. "
-            "Pricing comparison data is real; cross-source demo uses synthetic pricing."
-        )
     social_signals = signals[signals["signal_type"] == "social_theme"]
     for row in _top_per_type(social_signals, 3).itertuples(index=False):
         render_signal_card(row, data)
-    with st.expander("All social theme signals"):
-        show_signals(social_signals, evidence, "social")
 
     st.subheader("Social coverage gaps")
     coverage = data["coverage"].copy()
-    coverage_label = (
-        "Synthetic coverage window"
-        if data["mode"] == "synthetic"
-        else "Coverage window"
-    )
     st.caption(
-        f"{coverage_label}: "
+        f"Coverage window: "
         f"{_span(coverage['window_start'], coverage['window_end'])}. "
         "Gaps are reported as captured, not inferred."
     )
-    if data["mode"] == "synthetic":
-        st.caption(
-            "Synthetic fixture includes LinkedIn posts in all three months; "
-            "the real capture remains Facebook-only."
-        )
     render_coverage_cards(data)
     with st.expander("Coverage details"):
         table = pd.DataFrame({
@@ -136,19 +101,3 @@ def render_fairymail(data):
                 "Note": st.column_config.TextColumn(width="large"),
             },
         )
-
-    st.subheader("Uncertainty handling")
-    fairy_uncertain = _uncertain(
-        signals[signals["signal_type"].isin(
-            ["pricing_change", "social_theme", "cross_source"]
-        )]
-    )
-    st.caption(
-        "Isolated posts, low evidence strength and coverage gaps are kept "
-        "separate from findings."
-    )
-    if fairy_uncertain.empty:
-        st.success("No uncertain FairyMail signals.")
-    else:
-        for row in _prioritized(fairy_uncertain).itertuples(index=False):
-            render_signal_card(row, data)

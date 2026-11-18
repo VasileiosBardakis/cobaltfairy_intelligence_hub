@@ -3,6 +3,7 @@ import streamlit as st
 
 from .data import (
     _evidence_count,
+    _evidence_ids_text,
     _evidence_view,
     _period,
     _period_rows,
@@ -14,7 +15,6 @@ from .theme import (
     _confidence_label,
     _esc,
     _pill,
-    _side_pill,
     _signal_label,
     _status_label,
     _status_pill,
@@ -47,6 +47,11 @@ def render_sidebar(data):
                 <div class="brand-title">Cobalt Fairy</div>
               </div>
             </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f"""
             <div class="side-section">
               <div class="side-label">Data periods</div>
               {periods}
@@ -59,7 +64,7 @@ def render_sidebar(data):
             f"""
             <div class="side-note">
               Signals generated {_esc(refreshed_text)}.<br>
-              {_esc('Synthetic social + cross-source fixture; CF/pricing real. Not real evidence.' if data['mode'] == 'synthetic' else 'Read-only prototype. AI output is pre-generated; no live AI calls.')}
+              Read-only prototype. AI output is pre-generated; no live AI calls.
             </div>
             """,
             unsafe_allow_html=True,
@@ -90,25 +95,15 @@ def render_metric_cards(data):
     cross_count = int((signals["signal_type"] == "cross_source").sum())
     verified = int((claims["verification_status"] == "verified").sum())
     gaps = int(data["coverage"]["status"].ne("complete").sum())
-    claim_label = (
-        "Claims checked"
-        if data["mode"] == "synthetic"
-        else "Claims with source quote"
-    )
-    claim_hint = (
-        "fixture + real pricing/CF"
-        if data["mode"] == "synthetic"
-        else "exact quote matched"
-    )
-    cross_hint = (
-        "synthetic co-occurrence"
-        if data["mode"] == "synthetic"
-        else "shared across sources"
-    )
     items = [
         (len(reviewable), "Signals to review", "open items", "blue"),
-        (cross_count, "Cross-source patterns", cross_hint, "lavender"),
-        (f"{verified}/{len(claims)}", claim_label, claim_hint, "mint"),
+        (cross_count, "Cross-source patterns", "shared across sources", "lavender"),
+        (
+            f"{verified}/{len(claims)}",
+            "Claims quote-matched",
+            "automated exact-quote check",
+            "mint",
+        ),
         (gaps, "Coverage caveats", "source limits", "peach"),
     ]
     cards = "".join(
@@ -120,15 +115,53 @@ def render_metric_cards(data):
         for value, label, hint, tone in items
     )
     st.markdown(f'<div class="metric-grid">{cards}</div>', unsafe_allow_html=True)
+    st.caption(
+        "Quote-matched is an automated exact-quote check, not human sign-off. "
+        "Review every claim and its source in the Evidence tab."
+    )
 
 
 def render_legend():
-    with st.expander("How to read this hub"):
-        st.markdown(
-            """**Observed** source data | **Calculated** deterministic metrics | **AI-assisted** pre-generated, checked text
-
-**Needs review** validate before use | **Suggested link** related sources, not causal | **Not enough evidence** not a trend"""
+    blocks = [
+        (
+            "Data source",
+            [
+                ("Observed", "cobalt", "Raw source data"),
+                ("Calculated", "violet", "Deterministic metrics"),
+                ("AI-assisted", "green", "Pre-generated, checked text"),
+            ],
+        ),
+        (
+            "Signal status",
+            [
+                ("Needs review", "cobalt", "Validate before use"),
+                ("Suggested link", "violet", "Related sources, not causal"),
+                ("Not enough evidence", "amber", "Not a trend"),
+            ],
+        ),
+        (
+            "Quote checks",
+            [
+                ("Quote matched", "green", "Automated exact-quote check"),
+                ("Needs review", "amber", "No exact quote, human review required"),
+            ],
+        ),
+    ]
+    legend_html = "".join(
+        f'<div class="legend-block">'
+        f'<div class="legend-heading">{_esc(heading)}</div>'
+        + "".join(
+            f'<div class="legend-item">'
+            f"{_pill(label, tone)}"
+            f'<span class="legend-desc">{_esc(description)}</span>'
+            f"</div>"
+            for label, tone, description in items
         )
+        + "</div>"
+        for heading, items in blocks
+    )
+    with st.expander("How to read this hub"):
+        st.markdown(legend_html, unsafe_allow_html=True)
 
 
 
@@ -209,6 +242,11 @@ def show_signals(signals, evidence, key):
                 _evidence_view(rows),
                 hide_index=True,
                 width="stretch",
+                column_config={
+                    "Evidence ID": st.column_config.TextColumn(width="medium"),
+                    "Evidence": st.column_config.TextColumn(width="large"),
+                    "Source URL": st.column_config.LinkColumn(display_text="link"),
+                },
             )
 
 
@@ -223,10 +261,14 @@ def render_claim_rows(claims):
         if isinstance(claim.quote, str) and claim.quote.strip():
             quote_html = f'<div class="quote">“{_esc(claim.quote)}”</div>'
         count = _evidence_count(claim.evidence_ids)
+        ids_text = _evidence_ids_text(claim.evidence_ids)
         meta_html = ""
         if count:
             label = "source" if count == 1 else "sources"
-            meta_html = f'<div class="claim-meta">{count} cited {label}</div>'
+            meta = f"{count} cited {label}"
+            if ids_text:
+                meta += f": {ids_text}"
+            meta_html = f'<div class="claim-meta">{_esc(meta)}</div>'
         rows.append(
             f'<div class="claim-row">'
             f'{_claim_pill(claim.verification_status)}'
@@ -288,20 +330,17 @@ def render_signal_card(signal, data):
                     _evidence_view(evidence_rows),
                     hide_index=True,
                     width="stretch",
+                    column_config={
+                        "Evidence ID": st.column_config.TextColumn(width="medium"),
+                        "Evidence": st.column_config.TextColumn(width="large"),
+                        "Source URL": st.column_config.LinkColumn(display_text="link"),
+                    },
                 )
 
-            is_fixture = (
-                data["mode"] == "synthetic"
-                and str(signal.signal_id).startswith("syn-")
-            )
-            interpretation_label = (
-                "Fixture interpretation" if is_fixture else "AI interpretation"
-            )
-            source_pill = "synthetic" if is_fixture else "pre-generated"
             st.markdown(
                 f'<div class="pill-row" style="margin-top:14px;">'
-                f'{_pill(interpretation_label, "violet")}'
-                f'{_pill(source_pill, "gray")}</div>',
+                f'{_pill("AI interpretation", "violet")}'
+                f'{_pill("pre-generated", "gray")}</div>',
                 unsafe_allow_html=True,
             )
             if brief.empty:
@@ -344,15 +383,10 @@ def render_briefs(data):
     selected = st.selectbox("AI brief", list(options), key="brief_select")
     brief = briefs[briefs["brief_id"] == options[selected]].iloc[0]
 
-    is_fixture = brief["model"] == "synthetic_fixture"
-    interpretation_label = (
-        "Fixture interpretation" if is_fixture else "AI interpretation"
-    )
-    source_pill = "synthetic" if is_fixture else "pre-generated"
     st.markdown(
         f'<div class="pill-row">'
-        f'{_pill(interpretation_label, "violet")}'
-        f'{_pill(source_pill, "gray")}'
+        f'{_pill("AI interpretation", "violet")}'
+        f'{_pill("pre-generated", "gray")}'
         f'{_pill(_signal_label(brief["signal_type"]), "gray")}'
         f'{_status_pill(brief["status"])}</div>',
         unsafe_allow_html=True,
@@ -417,6 +451,63 @@ def render_inference_queue(data):
         st.dataframe(table, hide_index=True, width="stretch")
 
 
+def render_claims_audit(data):
+    claims = data["claims"].copy()
+    if claims.empty:
+        st.info("No claims available.")
+        return
+
+    claims = claims.merge(
+        data["signals"][["signal_id", "title"]], on="signal_id", how="left"
+    )
+    claims = claims[claims["verification_status"] != "unsupported"]
+    if claims.empty:
+        st.info("No verified or inferential claims available.")
+        return
+
+    rank = {"inferential": 0, "verified": 1}
+    claims["_rank"] = claims["verification_status"].map(rank).fillna(2)
+    claims = claims.sort_values(["_rank", "claim_id"])
+    status_labels = {
+        "verified": "Quote matched",
+        "inferential": "Needs review",
+    }
+
+    st.caption(
+        f"All {len(claims)} claims across {claims['brief_id'].nunique()} briefs. "
+        "'Quote matched' is an automated exact-quote check, not human sign-off. "
+        "Unsupported claims stay in the error log below."
+    )
+    choice = st.selectbox(
+        "Status",
+        ["All claims", "Needs review", "Quote matched"],
+        key="claims_audit_status",
+    )
+    if choice == "Needs review":
+        claims = claims[claims["verification_status"] == "inferential"]
+    elif choice == "Quote matched":
+        claims = claims[claims["verification_status"] == "verified"]
+
+    table = pd.DataFrame({
+        "Signal": claims["title"],
+        "Claim": claims["claim_text"],
+        "Status": claims["verification_status"].map(status_labels),
+        "Evidence IDs": claims["evidence_ids"].map(_evidence_ids_text),
+        "Quote": claims["quote"].fillna(""),
+        "Checker note": claims["checker_note"].fillna(""),
+    })
+    st.dataframe(
+        table,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "Claim": st.column_config.TextColumn(width="large"),
+            "Evidence IDs": st.column_config.TextColumn(width="medium"),
+            "Quote": st.column_config.TextColumn(width="large"),
+        },
+    )
+
+
 def render_theme_audit(data):
     labels = data["theme_labels"].copy()
     if labels.empty:
@@ -426,16 +517,11 @@ def render_theme_audit(data):
     labels = labels.merge(social, on="post_id", how="left")
     label_map = _theme_label_map()
     labels["confidence"] = pd.to_numeric(labels["confidence"], errors="coerce")
-    label_source = (
-        "synthetic fixture labels"
-        if data["mode"] == "synthetic"
-        else "labels"
-    )
     model = ", ".join(sorted({
         str(value) for value in labels["model"].dropna().unique()
     }))
     st.caption(
-        f"{len(labels)} {label_source} across {labels['post_id'].nunique()} posts. "
+        f"{len(labels)} labels across {labels['post_id'].nunique()} posts. "
         f"Model: {model or 'n/a'}. Every label stores an exact quote from the post."
     )
     table = pd.DataFrame({
@@ -466,30 +552,13 @@ def render_theme_audit(data):
 def render_error_log(data):
     claims = data["claims"]
     unsupported = claims[claims["verification_status"] == "unsupported"]
-    briefs = data["briefs"]
-    review_briefs = briefs[briefs["checker_status"] == "needs_review"].merge(
-        data["signals"][["signal_id", "title"]], on="signal_id", how="left"
-    )
     issues = data["issues"]
 
     st.subheader("Error log")
     st.caption(
-        "Unsupported claims and briefs that failed the positioning check are "
-        "shown only here and are excluded from the verified output."
+        "Unsupported claims and mapping issues are shown only here and are "
+        "excluded from the verified output."
     )
-    with st.expander(
-        f"Briefs needing review ({len(review_briefs)})",
-        expanded=not review_briefs.empty,
-    ):
-        if review_briefs.empty:
-            st.success("No briefs need review.")
-        else:
-            table = pd.DataFrame({
-                "Signal": review_briefs["title"],
-                "Why it needs review": review_briefs["checker_note"],
-                "Positioning": review_briefs["positioning"],
-            })
-            st.dataframe(table, hide_index=True, width="stretch")
 
     with st.expander(
         f"Unsupported claims ({len(unsupported)})", expanded=not unsupported.empty
