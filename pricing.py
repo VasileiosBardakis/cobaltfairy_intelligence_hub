@@ -64,6 +64,64 @@ def _change_type(row):
     return "price_change"
 
 
+def coverage_summary(baseline, current, changes):
+    if baseline.empty or current.empty or changes.empty:
+        return pd.DataFrame()
+
+    baseline = baseline.copy()
+    baseline["monthly_price_usd"] = pd.to_numeric(
+        baseline["monthly_price_usd"], errors="coerce"
+    )
+    mapping = changes[["baseline_platform", "platform"]].drop_duplicates()
+    platform_map = dict(zip(mapping["baseline_platform"], mapping["platform"]))
+    baseline["provider"] = baseline["platform"].map(platform_map).fillna(
+        baseline["platform"]
+    )
+    priced = baseline[baseline["monthly_price_usd"].notna()]
+    baseline_counts = priced.groupby("provider").size()
+    current_counts = current.groupby("platform").size()
+
+    matched = changes[changes["baseline_price"].notna()].copy()
+    matched["provider"] = matched["baseline_platform"].map(platform_map).fillna(
+        matched["baseline_platform"]
+    )
+    matched = matched.drop_duplicates(
+        ["provider", "baseline_plan", "baseline_tier"]
+    )
+    matched_counts = matched.groupby("provider").size()
+    mismatch_counts = changes[changes["tier_mismatch"]].groupby("platform").size()
+
+    def caveat(provider):
+        rows = current[current["platform"] == provider]
+        notes = sorted({
+            str(note).strip()
+            for note in rows["notes"]
+            if pd.notna(note) and str(note).strip()
+        })
+        if notes:
+            return "; ".join(notes)
+        if mismatch_counts.get(provider, 0):
+            return "Tier basis or tier differs from baseline."
+        return ""
+
+    providers = sorted(set(baseline_counts.index) | set(current_counts.index))
+    rows = []
+    for provider in providers:
+        baseline_points = int(baseline_counts.get(provider, 0))
+        captured_points = int(current_counts.get(provider, 0))
+        matched_points = int(matched_counts.get(provider, 0))
+        rows.append({
+            "Provider": provider,
+            "Baseline priced points": baseline_points,
+            "Captured points": captured_points,
+            "Matched baseline points": matched_points,
+            "Unmatched baseline points": max(baseline_points - matched_points, 0),
+            "Tier mismatches": int(mismatch_counts.get(provider, 0)),
+            "Caveat": caveat(provider),
+        })
+    return pd.DataFrame(rows)
+
+
 def main():
     with sqlite3.connect(DB) as con:
         baseline, current = load_pricing(con)

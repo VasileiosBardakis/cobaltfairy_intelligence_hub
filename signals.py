@@ -224,11 +224,13 @@ def _pricing_signals(store, changes):
         )
         if row["tier_mismatch"]:
             note += " Tier basis or tier differs from baseline."
+        status = "inferential" if row["tier_mismatch"] else "candidate"
+        confidence = 0.6 if row["tier_mismatch"] else 1.0
         _add(
             store, "pricing_change",
             f"{row['platform']}:{row['plan']}:{tier}:{row['change_type']}",
             title, row["platform"], "September 2025", row["captured_at"],
-            summary, "candidate", 1.0, RULE_PRICING, note, evidence,
+            summary, status, confidence, RULE_PRICING, note, evidence,
         )
 
 

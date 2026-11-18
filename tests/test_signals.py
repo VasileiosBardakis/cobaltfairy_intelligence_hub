@@ -90,6 +90,21 @@ class TestSignals(unittest.TestCase):
         self.assertIsNone(self.one(
             "SELECT 1 FROM signals WHERE title LIKE '%at 500 emails%'"
         ))
+        for title in [
+            "ActiveCampaign changes Pro price at 1000 subscribers",
+            "Constant Contact changes Lite price at 25000 subscribers",
+        ]:
+            row = self.one(
+                "SELECT status, confidence FROM signals WHERE title=?", (title,)
+            )
+            self.assertEqual(row["status"], "inferential", title)
+            self.assertLess(row["confidence"], 1.0, title)
+        exact = self.one(
+            "SELECT status, confidence FROM signals "
+            "WHERE title='ActiveCampaign changes Pro price at 20000 subscribers'"
+        )
+        self.assertEqual(exact["status"], "candidate")
+        self.assertEqual(exact["confidence"], 1.0)
         rename = self.one(
             "SELECT quote FROM signal_evidence e JOIN signals s "
             "ON s.signal_id=e.signal_id WHERE s.title="

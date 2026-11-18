@@ -183,6 +183,26 @@ class TestBriefChecker(unittest.TestCase):
         self.assertEqual(status, "needs_review")
         self.assertIn("renamed plan", note)
 
+    def test_now_named_positioning_is_allowed(self):
+        evidence = [{
+            "evidence_id": "pricing_rename:Brevo:Business:Standard:20000:emails",
+            "evidence_type": "pricing_rename",
+            "quote": "Plan renamed from Business to Standard; Business is not a separate current plan.",
+            "role": "supporting",
+        }]
+        output = {
+            "positioning": (
+                "Brevo's Business plan at 20,000 emails is now named Standard, "
+                "with the monthly price unchanged at $69."
+            ),
+            "claims": [],
+        }
+        _, status, note = briefs.check_output(
+            output, signal(signal_type="pricing_change"), evidence
+        )
+        self.assertEqual(status, "auto_checked")
+        self.assertEqual(note, "")
+
 
 class TestGenerateBriefs(unittest.TestCase):
     def test_generate_and_store(self):

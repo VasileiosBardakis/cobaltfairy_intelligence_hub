@@ -162,7 +162,12 @@ def _rename_issue(text, renamed_from):
         "baseline", "former", "formerly", "previous", "previously",
         "renamed", "was", "old",
     }
-    return (mentions_old and not qualified) or bool(tokens & COEXIST_WORDS)
+    qualified_phrases = (
+        "now named", "now called", "renamed to", "name changed to",
+        "formerly known as", "previously known as",
+    )
+    renamed = bool(qualified) or any(phrase in text for phrase in qualified_phrases)
+    return (mentions_old and not renamed) or bool(tokens & COEXIST_WORDS)
 
 
 def check_output(output, signal, evidence):
