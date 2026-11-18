@@ -29,6 +29,9 @@ Market & Competitive Intelligence Hub prototype for Cobalt Fairy and FairyMail.
 # Run the analysis smoke check
 .\.venv\Scripts\python.exe analysis.py
 
+# Run the pricing comparison smoke check
+.\.venv\Scripts\python.exe pricing.py
+
 # Node/JS tooling
 pnpm <command>
 ```
@@ -39,4 +42,5 @@ pnpm <command>
 - Raw supplied data stays in `cobaltfairy-data/`.
 - Use a single SQLite database, `intel.db`, at the repo root.
 - Taxonomy mappings live in `mappings.csv`; do not hardcode category mappings in analysis code.
+- Captured public pricing lives in `pricing_current.csv` with source URLs and evidence files.
 - Never commit `.env` or API keys.

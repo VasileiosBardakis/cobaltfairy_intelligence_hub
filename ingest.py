@@ -10,6 +10,7 @@ warnings.filterwarnings("ignore", message=".*extension is not supported.*")
 ROOT = Path(__file__).parent
 DATA = ROOT / "cobaltfairy-data"
 DB = ROOT / "intel.db"
+CURRENT_PRICING = ROOT / "pricing_current.csv"
 
 
 def num(s):
@@ -199,11 +200,25 @@ meta = meta[
 
 assert len(meta) == 8
 
+current = pd.DataFrame()
+if CURRENT_PRICING.exists():
+    current = pd.read_csv(CURRENT_PRICING, dtype=str, keep_default_na=False)
+    current["source_row"] = current.index + 2
+    current["source_file"] = CURRENT_PRICING.name
+    current["price"] = num(current["price"])
+    current["baseline_tier"] = num(current["baseline_tier"]).astype("Int64")
+    current["current_tier"] = num(current["current_tier"]).astype("Int64")
+    current["captured_at"] = pd.to_datetime(current["captured_at"], errors="coerce").dt.date
+
 with sqlite3.connect(DB) as con:
     write(klytics, "klytics_markets", con)
     write(cf, "cf_performance", con)
     write(pricing, "pricing_baseline", con)
     write(meta, "pricing_meta", con)
+    if current.empty:
+        con.execute("DROP TABLE IF EXISTS pricing_current")
+    else:
+        write(current, "pricing_current", con)
 
     assert con.execute(
         "select net_units_sold, round(royalty, 2) from cf_performance "
