@@ -1,0 +1,10 @@
+taxonomy_id,version,theme_id,label,description,include_examples,exclude_examples,active,source
+base,1,ai_automation,AI and automation,"Generative AI, AI assistants and automation workflows",generative AI; AI agents; automation workflows,general productivity,true,manual
+base,1,peak_season_bfcm,Peak season and BFCM,"Holiday, Black Friday, Cyber Monday and peak-season planning",Black Friday; BFCM; Q4; holiday campaigns,evergreen brand content,true,manual
+base,1,email_sms_multichannel,Email and SMS multichannel,Using email and SMS together or comparing channels,email plus SMS; multichannel; SMS revenue,single-channel product news,true,manual
+base,1,customer_data_personalization,Customer data and personalization,"Segmentation, targeting, customer data and personalization",segmentation; targeting; customer data; personalization,general brand awareness,true,manual
+base,1,discount_promotion,Discount and promotion,"Discounts, sales, promo codes and limited-time offers",26% off; promo code; sale,product education,true,manual
+base,1,community_events,Community and events,"Events, communities, conferences and community engagement",React India; conference; community,paid advertising,true,manual
+base,1,brand_creative,Brand and creative,"Brand storytelling, art, culture and creative campaigns",artist series; brand story; creative,performance claims,true,manual
+base,1,product_positioning,Product positioning,"Positioning claims about product value, audience or differentiation",right message right person; customer relationships,pricing facts,true,manual
+social_competitive,1,peak_season_bfcm,Peak season and BFCM,Holiday and BFCM messaging for email marketing competitors,Black Friday; BFCM; Q4; peak season,evergreen brand content,true,manual

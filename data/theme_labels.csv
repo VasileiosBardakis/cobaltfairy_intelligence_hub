@@ -1,0 +1,31 @@
+post_id,taxonomy_id,version,theme_id,confidence,evidence_quote,is_new_theme,label_source,model,prompt_version,created_at
+fb-mailchimp-2026-11-17-1,social_competitive,1,ai_automation,0.95,"Use generative AI to create and test emails and text messages for different holidays, audiences, and promotions.",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-11-17-1,social_competitive,1,email_sms_multichannel,0.9,"Use generative AI to create and test emails and text messages for different holidays, audiences, and promotions.",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-11-17-1,social_competitive,1,customer_data_personalization,0.9,Segment our audience into groups like those likely to purchase again or spend more over time.,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-11-17-1,social_competitive,1,peak_season_bfcm,0.95,There’s only a few more days until peak season starts on Halloween. Is your marketing strategy ready?,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-11-10-1,social_competitive,1,ai_automation,0.95,is generative AI. Emails sent by Mailchimp customers that used generative AI during peak season 2025 saw +50% order rate and +33% conversion rate.,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-11-10-1,social_competitive,1,peak_season_bfcm,0.9,between Halloween and New Year’s Eve,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-11-10-1,social_competitive,1,email_sms_multichannel,0.85,email and SMS marketing platform,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-10-21-1,social_competitive,1,brand_creative,0.95,"creates whimsical, vibrant art inspired by otherworldly visions",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-10-21-1,social_competitive,1,community_events,0.6,sparked meaningful connections along the way,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-10-15-1,social_competitive,1,peak_season_bfcm,0.95,peak season 2025,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-10-15-1,social_competitive,1,email_sms_multichannel,0.9,Brands using email and SMS together saw a higher share of revenue from SMS than brands using SMS alone.,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-10-15-1,social_competitive,1,ai_automation,0.85,Emails that used generative AI saw higher conversion rates.,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-10-15-1,social_competitive,1,customer_data_personalization,0.8,timing and targeting strategies,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-09-22-1,social_competitive,1,peak_season_bfcm,0.95,2025 peak season was noisy.,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-09-22-1,social_competitive,1,email_sms_multichannel,0.9,Email + SMS together outperformed SMS alone,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailchimp-2026-09-22-1,social_competitive,1,ai_automation,0.85,AI gave some brands a real edge in orders and conversions,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-13-1,social_competitive,1,peak_season_bfcm,0.95,Black Friday planning chat,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-13-1,social_competitive,1,customer_data_personalization,0.9,"make more of the data, channels and customer relationships you already have",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-13-1,social_competitive,1,product_positioning,0.8,The Home Field Advantage,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-06-1,social_competitive,1,community_events,0.97,Throwback to three amazing days at React India!,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-05-1,social_competitive,1,peak_season_bfcm,0.95,"With Black Friday coming up, you’ve got a few good reasons to get back in touch.",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-05-1,social_competitive,1,email_sms_multichannel,0.7,A price drop on something they wanted? Worth an email.,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-05-1,social_competitive,1,customer_data_personalization,0.6,three ways to give those window-shoppers a reason to come back and buy,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-03-1,social_competitive,1,peak_season_bfcm,0.95,Black Friday & Cyber Monday coming up,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-03-1,social_competitive,1,discount_promotion,0.9,You’ve got a sale. So does everyone else.,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-11-03-1,social_competitive,1,customer_data_personalization,0.8,shoppers had a plan too. A lot of them knew what they wanted before the sale started,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-10-23-1,social_competitive,1,product_positioning,0.9,"The right message, to the right person, at the right time.",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-brevo-2026-10-23-1,social_competitive,1,customer_data_personalization,0.6,"to the right person, at the right time",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailerlite-2026-11-17-1,social_competitive,1,discount_promotion,0.97,"Save 26% on any annual plan, whatever your list size.",False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00
+fb-mailerlite-2026-11-17-1,social_competitive,1,peak_season_bfcm,0.85,MailerLite’s Lite Friday sale is officially live!,False,llm,deepseek-flash,theme-label-v1,2026-11-18T12:38:14+00:00

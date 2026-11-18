@@ -8,11 +8,11 @@ import pandas as pd
 warnings.filterwarnings("ignore", message=".*extension is not supported.*")
 
 ROOT = Path(__file__).parent
-DATA = ROOT / "cobaltfairy-data"
-DB = ROOT / "intel.db"
-CURRENT_PRICING = ROOT / "pricing_current.csv"
-SOCIAL_POSTS = ROOT / "social_posts.csv"
-SOCIAL_COVERAGE = ROOT / "social_coverage.csv"
+DATA = ROOT / "data"
+DB = DATA / "intel.db"
+CURRENT_PRICING = DATA / "pricing_current.csv"
+SOCIAL_POSTS = DATA / "social_posts.csv"
+SOCIAL_COVERAGE = DATA / "social_coverage.csv"
 
 
 def num(s):

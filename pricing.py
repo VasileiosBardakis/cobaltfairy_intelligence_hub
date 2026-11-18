@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).parent
-DB = ROOT / "intel.db"
+DB = ROOT / "data" / "intel.db"
 
 
 def load_pricing(con):

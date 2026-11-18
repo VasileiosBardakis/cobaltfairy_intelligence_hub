@@ -6,8 +6,8 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).parent
-DB = ROOT / "intel.db"
-MAPPINGS = ROOT / "mappings.csv"
+DB = ROOT / "data" / "intel.db"
+MAPPINGS = ROOT / "data" / "mappings.csv"
 IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
