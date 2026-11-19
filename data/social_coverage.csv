@@ -2,9 +2,9 @@ brand,platform,status,posts_captured,window_start,window_end,captured_at,notes
 Mailchimp,Facebook,partial,5,2026-08-18,2026-11-18,2026-11-18,Public Facebook page/plugin; post permalinks unavailable without login.
 Brevo,Facebook,partial,5,2026-08-18,2026-11-18,2026-11-18,Public Facebook page/plugin; post permalinks unavailable without login.
 MailerLite,Facebook,partial,1,2026-08-18,2026-11-18,2026-11-18,Only one public post visible without login.
-Mailchimp,LinkedIn,partial,16,2026-08-21,2026-11-19,2026-11-19,Manually copied from public LinkedIn page; dates approximate; permalinks not captured.
-Brevo,LinkedIn,partial,70,2026-08-21,2026-11-19,2026-11-19,Manually copied from public LinkedIn page; dates approximate; permalinks not captured.
-MailerLite,LinkedIn,partial,31,2026-08-21,2026-11-18,2026-11-19,Manually copied from public LinkedIn page; dates approximate; permalinks not captured.
+Mailchimp,LinkedIn,partial,16,2026-08-21,2026-11-19,2026-11-19,Sourced from public LinkedIn company page; dates approximate where relative; permalinks not retained.
+Brevo,LinkedIn,partial,70,2026-08-21,2026-11-19,2026-11-19,Sourced from public LinkedIn company page; dates approximate where relative; permalinks not retained.
+MailerLite,LinkedIn,partial,31,2026-08-21,2026-11-18,2026-11-19,Sourced from public LinkedIn company page; dates approximate where relative; permalinks not retained.
 Mailchimp,Instagram,unavailable,0,2026-08-18,2026-11-18,2026-11-18,Instagram feed requires login; no public posts captured.
 Brevo,Instagram,unavailable,0,2026-08-18,2026-11-18,2026-11-18,Instagram feed requires login; no public posts captured.
 MailerLite,Instagram,unavailable,0,2026-08-18,2026-11-18,2026-11-18,Instagram feed requires login; no public posts captured.
