@@ -35,26 +35,7 @@ database already contain the AI output.
 
 ## Architecture
 
-```mermaid
-flowchart TD
-  A["Raw files"] --> B["ingest.py"]
-  B --> C[("intel.db")]
-  C --> D["analysis.py + pricing.py"]
-  C --> E["theme_labeling.py"]
-  E --> F["theme_labels.csv"]
-  D --> G["signals.py"]
-  F --> G
-  C --> G
-  G --> H["signals + evidence"]
-  H --> I["briefs.py + checker"]
-  I --> J["briefs + claims"]
-  C --> K["app.py / ui"]
-  D --> K
-  H --> K
-  J --> K
-  K --> L["Overview | Cobalt Fairy | FairyMail | Evidence"]
-  L -.-> M["Future: live collection, auth, scheduling"]
-```
+[![Architecture diagram](mermaid_diagram.png)](mermaid_diagram.png)
 
 `ingest.py` loads and validates the raw files. `analysis.py` and `pricing.py`
 do the deterministic comparisons. `signals.py` applies fixed thresholds and
@@ -73,6 +54,14 @@ UI only reads SQLite.
   community/events. Co-occurrence only.
 - **Uncertainty:** 4 pricing claims are `inferential`; CF Western and Regency
   Collection are `insufficient` (1 title each).
+
+## Example outputs
+
+Annotated screenshots and the AI failure case are in [`docs/example_outputs.md`](docs/example_outputs.md).
+
+## Video demonstration
+
+[Watch the walkthrough](https://youtu.be/DHEgSDP4dTQ). It covers the working system, the example findings, the AI failure case, and the reliability, privacy/security, and cost/maintainability questions.
 
 ## AI error handling
 

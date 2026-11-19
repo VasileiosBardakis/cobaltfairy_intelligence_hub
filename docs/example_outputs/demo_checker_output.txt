@@ -1,0 +1,37 @@
+﻿Brief checker demonstration
+========================================================================
+Real price signal:  MailerLite changes Power price at 500 subscribers (candidate)
+Weak social signal: MailerLite: pricing and social messaging (insufficient, demo override)
+========================================================================
+
+PASS  Good claim with an exact quote
+      claim status: verified    brief status: auto_checked
+
+PASS  Claim with no exact quote
+      claim status: inferential brief status: auto_checked
+      reason: no exact quote
+
+PASS  Invented quote is rejected
+      claim status: unsupported brief status: auto_checked
+      reason: quote not found in cited evidence
+
+PASS  Unknown evidence id is rejected
+      claim status: unsupported brief status: auto_checked
+      reason: unknown evidence id
+
+PASS  Renamed plan treated as still available is rejected
+      claim status: unsupported brief status: auto_checked
+      reason: treats a renamed plan as a current separate plan
+
+PASS  Baseline-qualified old plan name is allowed
+      claim status: verified    brief status: auto_checked
+
+PASS  Trend language under insufficient evidence is rejected
+      claim status: unsupported brief status: auto_checked
+      reason: trend language with insufficient evidence
+
+PASS  Positioning that resurrects a renamed plan needs review
+      claim status: -           brief status: needs_review
+      reason: positioning treats a renamed plan as a current separate plan
+
+8/8 cases matched expectations
