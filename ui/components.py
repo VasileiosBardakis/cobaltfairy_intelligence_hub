@@ -10,6 +10,7 @@ from .data import (
     _theme_label_map,
 )
 from .theme import (
+    STATUS_RANK,
     STATUS_TONES,
     _claim_pill,
     _confidence_label,
@@ -121,6 +122,89 @@ def render_metric_cards(data):
     )
 
 
+def render_competitor_snapshot(data):
+    brands = ["Mailchimp", "Brevo", "MailerLite"]
+    social = data["social"]
+    changes = data["pricing_changes"]
+    coverage = data["coverage"]
+    label_map = _theme_label_map()
+
+    labels = data["theme_labels"].copy()
+    if not labels.empty:
+        labels["confidence"] = pd.to_numeric(labels["confidence"], errors="coerce")
+        labels = labels[labels["confidence"] >= 0.5]
+        labels = labels.merge(
+            social[["post_id", "brand"]], on="post_id", how="left"
+        )
+
+    cols = st.columns(len(brands))
+    for col, brand in zip(cols, brands):
+        with col:
+            with st.container(border=True):
+                st.markdown(
+                    f'<div class="card-kicker">Competitor</div>'
+                    f'<div class="card-title">{_esc(brand)}</div>',
+                    unsafe_allow_html=True,
+                )
+
+                brand_changes = changes[changes["platform"] == brand]
+                changed = brand_changes[
+                    brand_changes["change_type"].isin(["price_change", "new_plan"])
+                    | brand_changes["plan_renamed"]
+                ]
+                renamed_plans = brand_changes.loc[
+                    brand_changes["plan_renamed"], "baseline_plan"
+                ].nunique()
+                renames = int(renamed_plans)
+                change_word = "change" if len(changed) == 1 else "changes"
+                rename_word = "rename" if renames == 1 else "renames"
+                st.markdown(
+                    f"**Pricing:** {len(changed)} {change_word} · "
+                    f"{renames} {rename_word}"
+                )
+
+                brand_labels = labels[labels["brand"] == brand] if not labels.empty else labels
+                counts = (
+                    brand_labels.groupby("theme_id")
+                    .size()
+                    .sort_values(ascending=False)
+                    .head(2)
+                )
+                if counts.empty:
+                    themes = "No labelled themes"
+                else:
+                    themes = ", ".join(
+                        f"{label_map.get(theme, theme)} ({count})"
+                        for theme, count in counts.items()
+                    )
+                st.markdown(f"**Top themes:** {themes}")
+
+                brand_social = social[social["brand"] == brand]
+                fb = int((brand_social["platform"] == "Facebook").sum())
+                li = int((brand_social["platform"] == "LinkedIn").sum())
+                st.markdown(f"**Posts:** FB {fb} · LI {li}")
+
+                brand_cov = coverage[coverage["brand"] == brand]
+                if brand_cov.empty:
+                    status = "n/a"
+                    tone = "gray"
+                elif (brand_cov["status"] == "partial").any():
+                    status = "partial"
+                    tone = "amber"
+                else:
+                    status = "unavailable"
+                    tone = "amber"
+                st.markdown(
+                    f'<div class="pill-row">{_pill("coverage " + status, tone)}</div>',
+                    unsafe_allow_html=True,
+                )
+
+    st.caption(
+        "Pricing counts include changes, new plans and renames. "
+        "Top themes count theme labels; a post can carry more than one theme."
+    )
+
+
 def render_legend():
     blocks = [
         (
@@ -165,32 +249,49 @@ def render_legend():
 
 
 
-def render_coverage_cards(data):
+def render_coverage_matrix(data):
     coverage = data["coverage"].copy()
     coverage["posts_captured"] = pd.to_numeric(
         coverage["posts_captured"], errors="coerce"
-    ).fillna(0)
-    groups = coverage.groupby("platform", as_index=False).agg(
-        posts=("posts_captured", "sum"),
-        statuses=("status", lambda values: ", ".join(
-            sorted({str(value) for value in values})
-        )),
+    ).fillna(0).astype(int)
+
+    brands = ["Mailchimp", "Brevo", "MailerLite"]
+    brands = [brand for brand in brands if brand in set(coverage["brand"])]
+    platforms = ["Facebook", "LinkedIn", "Instagram"]
+
+    rows = []
+    for brand in brands:
+        row = {"Brand": brand}
+        for platform in platforms:
+            match = coverage[
+                (coverage["brand"] == brand) & (coverage["platform"] == platform)
+            ]
+            if match.empty:
+                row[platform] = "n/a"
+            else:
+                posts = int(match["posts_captured"].iloc[0])
+                status = str(match["status"].iloc[0]).title()
+                row[platform] = f"{posts} · {status}"
+        rows.append(row)
+
+    st.dataframe(
+        pd.DataFrame(rows),
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "Brand": st.column_config.TextColumn(width="medium"),
+            "Facebook": st.column_config.TextColumn(
+                help="Captured posts · coverage state"
+            ),
+            "LinkedIn": st.column_config.TextColumn(
+                help="Captured posts · coverage state"
+            ),
+            "Instagram": st.column_config.TextColumn(
+                help="Captured posts · coverage state"
+            ),
+        },
     )
-    cards = []
-    for row in groups.itertuples(index=False):
-        tone = "green" if row.statuses == "complete" else "amber"
-        cards.append(
-            f'<div class="coverage-card">'
-            f'<div class="coverage-platform">{_esc(row.platform)}</div>'
-            f'<div class="coverage-value">{int(row.posts)}</div>'
-            f'<div class="coverage-label">posts captured</div>'
-            f'<div class="pill-row">{_pill(row.statuses, tone)}</div>'
-            f"</div>"
-        )
-    st.markdown(
-        f'<div class="coverage-grid">{"".join(cards)}</div>',
-        unsafe_allow_html=True,
-    )
+    st.caption("Counts are captured posts; the second value is the coverage state.")
 
 
 def _signal_view(signals):
@@ -209,31 +310,100 @@ def _signal_view(signals):
     })
 
 
-def show_signals(signals, evidence, key):
+def render_all_signals(data):
+    signals = data["signals"].copy()
+    evidence = data["evidence"]
     if signals.empty:
-        st.info("No signals for this view.")
+        st.info("No signals available.")
         return
 
+    label_map = _theme_label_map()
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        types = st.multiselect(
+            "Type", sorted(signals["signal_type"].unique()),
+            format_func=_signal_label,
+            key="all_signals_type",
+        )
+    with col2:
+        statuses = st.multiselect(
+            "Status", sorted(signals["status"].unique()),
+            format_func=_status_label,
+            key="all_signals_status",
+        )
+    with col3:
+        entities = st.multiselect(
+            "Entity", sorted(signals["entity"].unique()),
+            format_func=lambda value: label_map.get(value, value),
+            key="all_signals_entity",
+        )
+    search = st.text_input("Search signals", key="all_signals_search")
+
+    view = signals
+    if types:
+        view = view[view["signal_type"].isin(types)]
+    if statuses:
+        view = view[view["status"].isin(statuses)]
+    if entities:
+        view = view[view["entity"].isin(entities)]
+    if search.strip():
+        needle = search.strip().lower()
+        mask = (
+            view["title"].str.lower().str.contains(needle, na=False)
+            | view["summary"].str.lower().str.contains(needle, na=False)
+            | view["coverage_note"].str.lower().str.contains(needle, na=False)
+        )
+        view = view[mask]
+
+    if view.empty:
+        st.info("No signals match these filters.")
+        return
+
+    counts = evidence.groupby("signal_id").size()
+    view = view.copy()
+    view["evidence_count"] = view["signal_id"].map(counts).fillna(0).astype(int)
+    view["_rank"] = view["status"].map(STATUS_RANK).fillna(len(STATUS_RANK))
+    view = view.sort_values(["_rank", "confidence"], ascending=[True, False])
+
+    table = pd.DataFrame({
+        "Signal": view["title"],
+        "Type": view["signal_type"].map(_signal_label),
+        "Entity": view["entity"].map(lambda value: label_map.get(value, value)),
+        "Period": [
+            _period(start, end)
+            for start, end in zip(view["period_start"], view["period_end"])
+        ],
+        "Status": view["status"].map(_status_label),
+        "Evidence strength": view["confidence"].map(_confidence_label),
+        "Evidence rows": view["evidence_count"],
+        "Coverage note": view["coverage_note"],
+    })
+    st.caption(
+        f"{len(view)} of {len(signals)} signals. "
+        "Evidence rows are the source rows behind each signal."
+    )
     st.dataframe(
-        _signal_view(signals),
+        table,
         hide_index=True,
         width="stretch",
         column_config={
             "Evidence strength": st.column_config.TextColumn(
                 help="High, medium or low based on the signal's confidence."
             ),
-            "Coverage note": st.column_config.TextColumn(
-                "Coverage / caveat", width="large"
-            ),
+            "Evidence rows": st.column_config.NumberColumn(width="small"),
+            "Coverage note": st.column_config.TextColumn(width="large"),
         },
     )
 
     options = {
         f"{row.title} · {_signal_label(row.signal_type)}": row.signal_id
-        for row in signals.itertuples(index=False)
+        for row in view.itertuples(index=False)
     }
-    with st.expander("Source evidence"):
-        selected = st.selectbox("Signal", list(options), key=f"{key}_signal")
+    with st.expander("Evidence for selected signal"):
+        selected = st.selectbox(
+            "Signal", list(options), key="all_signals_evidence"
+        )
         rows = evidence[evidence["signal_id"] == options[selected]]
         if rows.empty:
             st.info("No captured evidence for this signal.")

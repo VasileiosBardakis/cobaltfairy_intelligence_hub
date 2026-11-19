@@ -2,7 +2,11 @@ import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from ..components import render_coverage_cards, render_signal_card
+from ..components import (
+    render_competitor_snapshot,
+    render_coverage_matrix,
+    render_signal_card,
+)
 from ..data import (
     _pricing_view,
     _span,
@@ -14,16 +18,12 @@ from ..theme import PLATFORM_COLORS, _style_fig
 def render_fairymail(data):
     signals = data["signals"]
 
-    st.subheader("Competitive change feed")
+    st.subheader("Competitor snapshot")
     st.caption(
-        "Pricing and social signals are ranked by review status and evidence strength. "
-        "AI interpretation is shown only with its source evidence."
+        "One card per competitor: captured pricing changes, top social themes "
+        "and post coverage."
     )
-    fairy_signals = signals[
-        signals["signal_type"].isin(["pricing_change", "social_theme"])
-    ]
-    for row in _top_per_type(fairy_signals, 2).itertuples(index=False):
-        render_signal_card(row, data)
+    render_competitor_snapshot(data)
 
     st.subheader("Pricing comparison")
     changes = data["pricing_changes"].copy()
@@ -80,7 +80,7 @@ def render_fairymail(data):
         f"{_span(coverage['window_start'], coverage['window_end'])}. "
         "Gaps are reported as captured, not inferred."
     )
-    render_coverage_cards(data)
+    render_coverage_matrix(data)
     with st.expander("Coverage details"):
         table = pd.DataFrame({
             "Brand": coverage["brand"],

@@ -1,19 +1,16 @@
 import streamlit as st
 
 from ..components import (
+    render_all_signals,
     render_briefs,
     render_claims_audit,
     render_error_log,
     render_inference_queue,
     render_theme_audit,
-    show_signals,
 )
 
 
 def render_evidence(data):
-    signals = data["signals"]
-    evidence = data["evidence"]
-
     st.subheader("AI outputs and checks")
     st.caption(
         "Each claim shows whether it has an exact source quote or needs review. "
@@ -34,8 +31,12 @@ def render_evidence(data):
     render_theme_audit(data)
 
     st.divider()
-    st.subheader("Source evidence")
-    show_signals(signals, evidence, "evidence")
+    st.subheader("All signals and source evidence")
+    st.caption(
+        "Filter the signal set, then open the evidence rows for any signal. "
+        "Confidence is the signal's evidence strength, not a probability."
+    )
+    render_all_signals(data)
 
     st.divider()
     render_error_log(data)
