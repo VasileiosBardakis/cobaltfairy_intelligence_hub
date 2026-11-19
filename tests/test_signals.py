@@ -53,6 +53,15 @@ class TestSignals(unittest.TestCase):
         self.assertEqual(
             self.one("SELECT COUNT(*) AS n FROM social_coverage")["n"], 9
         )
+        self.assertEqual(
+            self.one("SELECT COUNT(*) AS n FROM social_posts")["n"], 128
+        )
+        self.assertEqual(
+            self.one(
+                "SELECT COUNT(*) AS n FROM social_posts WHERE platform='LinkedIn'"
+            )["n"],
+            117,
+        )
 
     def test_social_thresholds(self):
         peak = self.one(
@@ -64,8 +73,15 @@ class TestSignals(unittest.TestCase):
             "AND entity='discount_promotion'"
         )
         self.assertEqual(peak["status"], "candidate")
-        self.assertEqual(discount["status"], "insufficient")
+        self.assertEqual(discount["status"], "candidate")
         self.assertNotIn("trend", discount["summary"].lower())
+        self.assertEqual(
+            self.one(
+                "SELECT COUNT(*) AS n FROM signals "
+                "WHERE signal_type='social_theme' AND status='insufficient'"
+            )["n"],
+            0,
+        )
 
     def test_pricing_signals(self):
         self.assertGreaterEqual(
@@ -123,7 +139,7 @@ class TestSignals(unittest.TestCase):
         }
         self.assertEqual(status["Mailchimp"], "inferential")
         self.assertEqual(status["Brevo"], "inferential")
-        self.assertEqual(status["MailerLite"], "insufficient")
+        self.assertEqual(status["MailerLite"], "inferential")
         mailchimp = self.one(
             "SELECT summary FROM signals WHERE signal_type='cross_source' "
             "AND entity='Mailchimp'"

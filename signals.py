@@ -117,22 +117,32 @@ def _social_data():
     ]).drop_duplicates("theme_id", keep="last")
     label_map = dict(zip(taxonomy["theme_id"], taxonomy["label"]))
     merged = labels.merge(
-        posts[["post_id", "brand", "posted_at"]], on="post_id", how="left"
+        posts[["post_id", "brand", "posted_at", "platform"]],
+        on="post_id",
+        how="left",
     )
     return merged, label_map
 
 
 def _social_signals(store, labels, label_map):
-    note = "Facebook only; LinkedIn and Instagram unavailable."
+    note = (
+        "Public Facebook and LinkedIn posts; Instagram unavailable. "
+        "LinkedIn coverage is partial."
+    )
     for theme_id, group in labels.groupby("theme_id"):
         n = len(group)
         candidate = n >= MIN_POSTS
         label = label_map.get(theme_id, theme_id)
+        platform_counts = group["platform"].value_counts()
+        platform_text = ", ".join(
+            f"{platform} {count}" for platform, count in platform_counts.items()
+        )
         _add(
             store, "social_theme", theme_id,
-            f"{label}: {n} Facebook posts", theme_id,
+            f"{label}: {n} social posts", theme_id,
             group["posted_at"].min(), group["posted_at"].max(),
-            f"Observed in {n} Facebook posts across {group['brand'].nunique()} brand(s)."
+            f"Observed in {n} posts ({platform_text}) across "
+            f"{group['brand'].nunique()} brand(s)."
             if candidate else
             f"Insufficient evidence: {n} post(s); not enough to characterize a pattern.",
             "candidate" if candidate else "insufficient",
@@ -405,25 +415,26 @@ def _cross_source_signals(store, labels, label_map, baseline, current, changes):
         if post_count < MIN_POSTS:
             status, confidence = "insufficient", 0.3
             summary = (
-                f"Insufficient social evidence: {post_count} Facebook post(s); "
+                f"Insufficient social evidence: {post_count} post(s); "
                 f"{pricing_text} No positioning inference."
             )
         else:
             status, confidence = "inferential", 0.7
             themes = (
-                f" Recurring Facebook themes: {', '.join(top)}."
+                f" Recurring social themes: {', '.join(top)}."
                 if top else " No recurring theme met the 3-post threshold."
             )
             summary = f"{pricing_text}{themes} Co-occurrence only; no causal link."
 
         _add(
             store, "cross_source", brand,
-            f"{brand}: pricing and Facebook messaging", brand,
+            f"{brand}: pricing and social messaging", brand,
             brand_labels["posted_at"].min(),
             max(brand_labels["posted_at"].max(), brand_pricing["captured_at"].max()),
             summary, status, confidence, RULE_CROSS,
             "Cross-source co-occurrence only; no causal link. "
-            "Facebook only; LinkedIn and Instagram unavailable.",
+            "Public Facebook and LinkedIn posts; Instagram unavailable. "
+            "LinkedIn coverage is partial.",
             _social_evidence(brand_labels)
             + _pricing_evidence(brand, baseline, current, changes),
         )

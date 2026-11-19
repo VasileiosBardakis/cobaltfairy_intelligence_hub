@@ -35,6 +35,22 @@ class TestThemeLabeling(unittest.TestCase):
         self.assertEqual(new_themes, [])
         self.assertEqual(warnings, [])
 
+    def test_duplicate_theme_keeps_highest_confidence(self):
+        post = "We use generative AI."
+        output = {
+            "labels": [
+                {"theme_id": "ai_automation", "confidence": 0.6,
+                 "evidence_quote": "generative AI"},
+                {"theme_id": "ai_automation", "confidence": 0.9,
+                 "evidence_quote": "generative AI"},
+            ],
+            "new_themes": [],
+        }
+        labels, _, warnings = labeling.validate_output(output, post, self.themes)
+        self.assertEqual(len(labels), 1)
+        self.assertEqual(labels[0]["confidence"], 0.9)
+        self.assertEqual(warnings, [])
+
     def test_bad_quote_is_dropped(self):
         post = "We use generative AI."
         output = {

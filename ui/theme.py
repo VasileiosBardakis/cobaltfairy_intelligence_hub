@@ -75,6 +75,7 @@ html, body, [class*="css"] { font-family: var(--font-body); }
   color: var(--ink);
 }
 [data-testid="stHeader"] { background: transparent; }
+[data-testid="stHeaderActionElements"] { display: none !important; }
 #MainMenu, footer { visibility: hidden; }
 .block-container { padding-top: 2.4rem; padding-bottom: 4rem; max-width: 1480px; }
 h1, h2, h3 { font-family: var(--font-display); }

@@ -32,8 +32,11 @@ Market & Competitive Intelligence Hub prototype for Cobalt Fairy and FairyMail.
 # Run the pricing comparison smoke check
 .\.venv\Scripts\python.exe pricing.py
 
-# Run LLM theme labeling (requires DEEPSEEK_API_KEY)
+# Run LLM theme labeling (requires DEEPSEEK_API_KEY; labels new posts only)
 .\.venv\Scripts\python.exe theme_labeling.py
+
+# Relabel every post
+.\.venv\Scripts\python.exe theme_labeling.py --relabel
 
 # Generate deterministic signals
 .\.venv\Scripts\python.exe signals.py

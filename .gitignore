@@ -2,7 +2,6 @@
 .env
 __pycache__/
 *.pyc
-intel.db
 .streamlit/secrets.toml
 AI Solutions & Automation Specialist (Vasilis Bardakis ).docx
 .~lock.AI Solutions & Automation Specialist (Vasilis Bardakis ).docx\#

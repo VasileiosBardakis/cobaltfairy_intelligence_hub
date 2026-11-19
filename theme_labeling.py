@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import re
@@ -131,6 +132,13 @@ def validate_output(output, post_text, themes):
             "is_new_theme": theme_id in new_by_id,
         })
 
+    by_theme = {}
+    for label in labels:
+        current = by_theme.get(label["theme_id"])
+        if current is None or label["confidence"] > current["confidence"]:
+            by_theme[label["theme_id"]] = label
+    labels = list(by_theme.values())
+
     referenced = {label["theme_id"] for label in labels}
     new_themes = [theme for theme_id, theme in new_by_id.items() if theme_id in referenced]
     return labels, new_themes, warnings
@@ -175,6 +183,16 @@ def add_new_themes(taxonomy, new_themes, taxonomy_id=TAXONOMY_ID):
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Label social posts with the theme taxonomy."
+    )
+    parser.add_argument(
+        "--relabel",
+        action="store_true",
+        help="Re-label every post and replace the existing labels file.",
+    )
+    args = parser.parse_args()
+
     api_key = os.getenv("DEEPSEEK_API_KEY")
     if not api_key:
         print("DEEPSEEK_API_KEY is not set; no labels written.")
@@ -188,9 +206,21 @@ def main():
         base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
     )
 
+    existing = pd.DataFrame(columns=LABEL_COLUMNS)
+    if THEME_LABELS.exists() and not args.relabel:
+        existing = pd.read_csv(THEME_LABELS, dtype=str, keep_default_na=False)
+        existing = existing.reindex(columns=LABEL_COLUMNS)
+    existing_ids = set(existing["post_id"]) if not existing.empty else set()
+
     rows = []
+    skipped = 0
     created_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     for post in posts.itertuples(index=False):
+        if post.post_id in existing_ids:
+            skipped += 1
+            print(f"{post.post_id}: already labeled, skipped")
+            continue
+
         output = label_post(client, post.text, themes)
         labels, new_themes, warnings = validate_output(output, post.text, themes)
         for warning in warnings:
@@ -215,8 +245,15 @@ def main():
         print(f"{post.post_id}: {len(labels)} labels")
 
     taxonomy_all.to_csv(TAXONOMY, index=False)
-    pd.DataFrame(rows, columns=LABEL_COLUMNS).to_csv(THEME_LABELS, index=False)
-    print(f"wrote {len(rows)} labels to {THEME_LABELS.name}")
+    merged = pd.concat(
+        [existing, pd.DataFrame(rows, columns=LABEL_COLUMNS)],
+        ignore_index=True,
+    )
+    merged.to_csv(THEME_LABELS, index=False)
+    print(
+        f"wrote {len(rows)} new labels ({skipped} posts skipped) "
+        f"to {THEME_LABELS.name}"
+    )
     return 0
 
 
