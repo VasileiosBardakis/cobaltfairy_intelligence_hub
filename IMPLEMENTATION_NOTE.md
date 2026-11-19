@@ -72,3 +72,7 @@ shown so a reviewer can see how strong the bridge is.
 - Public APIs for social pricing to be collected automatically.
 - Materialised metrics computed once instead of rebuilding everytime.
 - Model/prompt versioning to use the best models according to different task, for example oumi decision model would be a good fit here.
+
+
+## Production Cost
+This project took about 6 hours, and 1.5 million tokens of deepseek which is 2.2$
